@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -27,6 +28,8 @@ interface FoodEntry {
   carbs?: number;
   fat?: number;
   mealType?: string;
+  imageUrl?: string;
+  recognizedByAi?: boolean;
   createdAt: string;
 }
 
@@ -262,13 +265,13 @@ export default function HomeScreen() {
           {entries.length === 0 ? (
             <View style={styles.emptyState}>
               <IconSymbol
-                ios_icon_name="fork.knife"
-                android_material_icon_name="restaurant"
+                ios_icon_name="camera.fill"
+                android_material_icon_name="camera"
                 size={48}
                 color={colors.textSecondary}
               />
               <Text style={styles.emptyText}>No meals logged yet</Text>
-              <Text style={styles.emptySubtext}>Tap the + button to add your first meal</Text>
+              <Text style={styles.emptySubtext}>Tap the camera button to scan your first meal</Text>
             </View>
           ) : (
             entries.map((entry) => {
@@ -279,9 +282,26 @@ export default function HomeScreen() {
               
               return (
                 <View key={entry.id} style={styles.entryCard}>
+                  {entry.imageUrl && (
+                    <Image source={{ uri: entry.imageUrl }} style={styles.entryImage} />
+                  )}
+                  
                   <View style={styles.entryHeader}>
                     <View style={styles.entryInfo}>
-                      <Text style={styles.entryName}>{entry.foodName}</Text>
+                      <View style={styles.entryNameRow}>
+                        <Text style={styles.entryName}>{entry.foodName}</Text>
+                        {entry.recognizedByAi && (
+                          <View style={styles.aiBadge}>
+                            <IconSymbol
+                              ios_icon_name="sparkles"
+                              android_material_icon_name="auto-awesome"
+                              size={12}
+                              color="#FFFFFF"
+                            />
+                            <Text style={styles.aiBadgeText}>AI</Text>
+                          </View>
+                        )}
+                      </View>
                       {entry.mealType && (
                         <Text style={styles.entryMealType}>{entry.mealType}</Text>
                       )}
@@ -326,18 +346,18 @@ export default function HomeScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Add Button */}
+      {/* Scan Food Button */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => {
-          console.log('Add button tapped');
+          console.log('Scan Food button tapped');
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setShowAddModal(true);
+          router.push('/camera');
         }}
       >
         <IconSymbol
-          ios_icon_name="plus"
-          android_material_icon_name="add"
+          ios_icon_name="camera.fill"
+          android_material_icon_name="camera"
           size={28}
           color="#FFFFFF"
         />
@@ -650,6 +670,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    overflow: 'hidden',
+  },
+  entryImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 12,
   },
   entryHeader: {
     flexDirection: 'row',
@@ -660,11 +687,30 @@ const styles = StyleSheet.create({
   entryInfo: {
     flex: 1,
   },
+  entryNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   entryName: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
+  },
+  aiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  aiBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   entryMealType: {
     fontSize: 12,

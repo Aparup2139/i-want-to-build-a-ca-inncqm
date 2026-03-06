@@ -56,10 +56,13 @@ export const apiCall = async <T = any>(
   console.log("[API] Calling:", url, options?.method || "GET");
 
   try {
+    const isFormData = options?.body instanceof FormData;
+    
     const fetchOptions: RequestInit = {
       ...options,
       headers: {
-        "Content-Type": "application/json",
+        // Don't set Content-Type for FormData - browser will set it with boundary
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         ...options?.headers,
       },
     };
@@ -186,15 +189,33 @@ export const authenticatedGet = async <T = any>(endpoint: string): Promise<T> =>
 
 /**
  * Authenticated POST request
+ * Supports both JSON and FormData
  */
 export const authenticatedPost = async <T = any>(
   endpoint: string,
-  data: any
+  data: any,
+  options?: { headers?: Record<string, string> }
 ): Promise<T> => {
-  return authenticatedApiCall<T>(endpoint, {
+  const isFormData = data instanceof FormData;
+  
+  const fetchOptions: RequestInit = {
     method: "POST",
-    body: JSON.stringify(data),
-  });
+    body: isFormData ? data : JSON.stringify(data),
+  };
+
+  // Don't set Content-Type for FormData - browser will set it with boundary
+  if (!isFormData) {
+    fetchOptions.headers = {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    };
+  } else if (options?.headers) {
+    // For FormData, only add custom headers (not Content-Type)
+    const { "Content-Type": _, ...otherHeaders } = options.headers;
+    fetchOptions.headers = otherHeaders;
+  }
+
+  return authenticatedApiCall<T>(endpoint, fetchOptions);
 };
 
 /**
