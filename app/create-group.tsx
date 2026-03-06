@@ -105,9 +105,10 @@ export default function CreateGroupScreen() {
   };
 
   const handleSuccessClose = () => {
+    console.log('User closed success modal - navigating to groups page');
     setSuccessModalVisible(false);
-    // Navigate back to groups screen
-    router.back();
+    // Navigate to groups screen to see the new group
+    router.replace('/(tabs)/groups');
   };
 
   return (
