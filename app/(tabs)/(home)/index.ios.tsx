@@ -340,25 +340,28 @@ export default function HomeScreen() {
           )}
         </View>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Scan Food Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => {
-          console.log('Scan Food button tapped');
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/camera');
-        }}
-      >
-        <IconSymbol
-          ios_icon_name="camera.fill"
-          android_material_icon_name="camera"
-          size={28}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
+      {/* Scan Food Button - Fixed positioning to avoid tab bar */}
+      <View style={styles.fabContainer} pointerEvents="box-none">
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => {
+            console.log('Scan Food button tapped');
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/camera');
+          }}
+          activeOpacity={0.8}
+        >
+          <IconSymbol
+            ios_icon_name="camera.fill"
+            android_material_icon_name="camera"
+            size={28}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -637,13 +640,19 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
-  fab: {
+  fabContainer: {
     position: 'absolute',
-    right: 20,
-    bottom: 90,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'flex-end',
+    paddingRight: 20,
+    paddingBottom: 100,
+  },
+  fab: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -652,6 +661,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+    zIndex: 1000,
   },
   modalOverlay: {
     flex: 1,
