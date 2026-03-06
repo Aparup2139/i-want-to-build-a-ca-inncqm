@@ -10,6 +10,7 @@ import {
 describe("API Integration Tests", () => {
   let authToken: string;
   let foodEntryId: string;
+  let foodEntryIdForOwnershipTest: string;
   let userId: string;
 
   test("Sign up test user", async () => {
@@ -206,6 +207,8 @@ describe("API Integration Tests", () => {
       }),
     });
     await expectStatus(res, 201);
+    const data = await res.json();
+    foodEntryIdForOwnershipTest = data.id;
   });
 
   test("Get all food entries", async () => {
@@ -350,6 +353,37 @@ describe("API Integration Tests", () => {
       }
     );
     await expectStatus(res, 404);
+  });
+
+  // ===== Food Entry Ownership Tests (403) =====
+
+  test("Update food entry from another user returns 403", async () => {
+    const { token: otherUserToken } = await signUpTestUser();
+    const res = await authenticatedApi(
+      `/api/food-entries/${foodEntryIdForOwnershipTest}`,
+      otherUserToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          foodName: "Hacked by another user",
+          calories: 999,
+        }),
+      }
+    );
+    await expectStatus(res, 403);
+  });
+
+  test("Delete food entry from another user returns 403", async () => {
+    const { token: otherUserToken } = await signUpTestUser();
+    const res = await authenticatedApi(
+      `/api/food-entries/${foodEntryIdForOwnershipTest}`,
+      otherUserToken,
+      {
+        method: "DELETE",
+      }
+    );
+    await expectStatus(res, 403);
   });
 
   // ===== Food Entry Auth Error Tests =====

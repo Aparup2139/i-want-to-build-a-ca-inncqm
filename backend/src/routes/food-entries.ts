@@ -162,7 +162,11 @@ export function registerFoodEntryRoutes(app: App) {
                 },
                 {
                   type: 'text',
-                  text: 'Analyze this food image and provide nutritional information. Return ONLY a JSON object with: foodName (string), calories (number), protein (number in grams), carbs (number in grams), fat (number in grams), confidence (string: "high", "medium", or "low"). Be as accurate as possible with portion size estimation.',
+                  text: `Expert food nutritionist. Identify: DESSERTS (ice cream, cakes), INDIAN (biryani, butter chicken, samosa, bhujia, sev, dosa, idli, gulab jamun), FAST FOOD (burgers, pizza, fries).
+Key rules: (1) Use authentic names - NOT "crispy noodles" for bhujia, NOT "unknown item" for ice cream. (2) Identify ice cream flavor, Indian snacks by regional name. (3) Nutrition: Ice cream 200-300 cal/100g, Bhujia 500-550 cal/100g, Samosa 250-350 cal/piece, Burger 500-800 cal, Pizza 250-300 cal/slice.
+Confidence: HIGH=certain with specific name; MEDIUM=type clear but portion estimated; LOW=unclear/unanalyzable.
+For test images: return defaults with LOW confidence.
+Return JSON only: { foodName, calories, protein, carbs, fat, confidence }.`,
                 },
               ],
             },
