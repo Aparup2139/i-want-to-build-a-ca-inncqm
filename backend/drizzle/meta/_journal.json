@@ -15,6 +15,13 @@
       "when": 1772819143065,
       "tag": "20260306174543_early_leper_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772819658379,
+      "tag": "20260306175418_ambiguous_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

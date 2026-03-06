@@ -14,6 +14,9 @@ export type App = typeof app;
 // Enable authentication with Better Auth
 app.withAuth();
 
+// Enable storage for file uploads
+app.withStorage();
+
 // Register routes
 registerFoodEntryRoutes(app);
 

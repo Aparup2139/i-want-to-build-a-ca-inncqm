@@ -2,6 +2,9 @@ import type { App } from '../index.js';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, gte, lt } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
+import { gateway } from '@specific-dev/framework';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 
 interface CreateFoodEntryBody {
   foodName: string;
@@ -21,8 +24,248 @@ interface UpdateFoodEntryBody {
   mealType?: string;
 }
 
+interface FromImageBody {
+  foodName: string;
+  calories: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  imageUrl: string;
+  mealType?: string;
+}
+
+interface AnalyzeImageResponse {
+  foodName: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  imageUrl: string;
+  confidence: string;
+}
+
+const nutritionSchema = z.object({
+  foodName: z.string().describe('Name of the identified food'),
+  calories: z.number().describe('Estimated calorie count'),
+  protein: z.number().describe('Estimated protein in grams'),
+  carbs: z.number().describe('Estimated carbs in grams'),
+  fat: z.number().describe('Estimated fat in grams'),
+  confidence: z.enum(['high', 'medium', 'low']).describe('Confidence level of the analysis'),
+});
+
 export function registerFoodEntryRoutes(app: App) {
   const requireAuth = app.requireAuth();
+
+  // POST /api/food/analyze-image - Analyze food image with AI
+  app.fastify.post(
+    '/api/food/analyze-image',
+    {
+      schema: {
+        description: 'Analyze a food image and extract nutritional information using AI',
+        tags: ['food-ai'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              foodName: { type: 'string' },
+              calories: { type: 'number' },
+              protein: { type: 'number' },
+              carbs: { type: 'number' },
+              fat: { type: 'number' },
+              imageUrl: { type: 'string' },
+              confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          413: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      app.logger.info({ userId: session.user.id }, 'Analyzing food image');
+
+      // Get file from request
+      const data = await request.file({ limits: { fileSize: 10 * 1024 * 1024 } });
+      if (!data) {
+        app.logger.warn({ userId: session.user.id }, 'No file provided for image analysis');
+        return reply.status(400).send({ error: 'No image file provided' });
+      }
+
+      let buffer: Buffer;
+      try {
+        buffer = await data.toBuffer();
+      } catch (err) {
+        app.logger.warn({ userId: session.user.id, err }, 'File too large');
+        return reply.status(413).send({ error: 'File size limit exceeded (10MB max)' });
+      }
+
+      // Validate that the file is not empty
+      if (buffer.length === 0) {
+        app.logger.warn({ userId: session.user.id }, 'Empty image file provided');
+        return reply.status(400).send({ error: 'Image file cannot be empty' });
+      }
+
+      // Upload image to storage
+      const storageKey = `food-images/${Date.now()}-${data.filename}`;
+      let uploadedKey: string;
+      try {
+        uploadedKey = await app.storage.upload(storageKey, buffer);
+        app.logger.info({ userId: session.user.id, key: uploadedKey }, 'Image uploaded to storage');
+      } catch (err) {
+        app.logger.error({ userId: session.user.id, err }, 'Failed to upload image');
+        return reply.status(500).send({ error: 'Failed to upload image' });
+      }
+
+      // Get signed URL for the image
+      let imageUrl: string;
+      try {
+        const signedUrlResult = await app.storage.getSignedUrl(uploadedKey);
+        imageUrl = signedUrlResult.url;
+        app.logger.info({ userId: session.user.id, imageUrl }, 'Generated signed URL for image');
+      } catch (err) {
+        app.logger.error({ userId: session.user.id, err }, 'Failed to generate signed URL');
+        return reply.status(500).send({ error: 'Failed to generate image URL' });
+      }
+
+      // Convert image to base64 for AI analysis
+      const base64 = buffer.toString('base64');
+
+      // Use Gemini to analyze the food image
+      let nutritionData: z.infer<typeof nutritionSchema>;
+      try {
+        app.logger.info({ userId: session.user.id }, 'Calling Gemini to analyze food image');
+        const result = await generateObject({
+          model: gateway('google/gemini-3-flash'),
+          schema: nutritionSchema,
+          schemaName: 'FoodNutrition',
+          schemaDescription: 'Extract nutritional information from a food image',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image',
+                  image: base64,
+                },
+                {
+                  type: 'text',
+                  text: 'Analyze this food image and provide nutritional information. Return ONLY a JSON object with: foodName (string), calories (number), protein (number in grams), carbs (number in grams), fat (number in grams), confidence (string: "high", "medium", or "low"). Be as accurate as possible with portion size estimation.',
+                },
+              ],
+            },
+          ],
+        });
+        nutritionData = result.object;
+        app.logger.info(
+          { userId: session.user.id, foodName: nutritionData.foodName, calories: nutritionData.calories },
+          'Food image analyzed successfully'
+        );
+      } catch (err) {
+        app.logger.error({ userId: session.user.id, err }, 'Failed to analyze image with AI');
+        return reply.status(500).send({ error: 'Failed to analyze image' });
+      }
+
+      return {
+        ...nutritionData,
+        imageUrl,
+      } as AnalyzeImageResponse;
+    }
+  );
+
+  // POST /api/food-entries/from-image - Create food entry from image analysis
+  app.fastify.post<{ Body: FromImageBody }>(
+    '/api/food-entries/from-image',
+    {
+      schema: {
+        description: 'Create a food entry from AI image analysis results',
+        tags: ['food-ai'],
+        body: {
+          type: 'object',
+          required: ['foodName', 'calories', 'imageUrl'],
+          properties: {
+            foodName: { type: 'string' },
+            calories: { type: 'number' },
+            protein: { type: 'number' },
+            carbs: { type: 'number' },
+            fat: { type: 'number' },
+            imageUrl: { type: 'string' },
+            mealType: { type: 'string' },
+          },
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              userId: { type: 'string' },
+              foodName: { type: 'string' },
+              calories: { type: 'number' },
+              protein: { type: ['number', 'null'] },
+              carbs: { type: ['number', 'null'] },
+              fat: { type: ['number', 'null'] },
+              mealType: { type: ['string', 'null'] },
+              imageUrl: { type: ['string', 'null'] },
+              recognizedByAi: { type: 'boolean' },
+              createdAt: { type: 'string', format: 'date-time' },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
+    async (request: FastifyRequest<{ Body: FromImageBody }>, reply: FastifyReply) => {
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { foodName, calories, protein, carbs, fat, imageUrl, mealType } = request.body;
+      app.logger.info(
+        { userId: session.user.id, foodName, calories, imageUrl },
+        'Creating food entry from image analysis'
+      );
+
+      const newEntry = await app.db
+        .insert(schema.foodEntries)
+        .values({
+          userId: session.user.id,
+          foodName,
+          calories,
+          protein: protein !== undefined ? protein : null,
+          carbs: carbs !== undefined ? carbs : null,
+          fat: fat !== undefined ? fat : null,
+          mealType: mealType !== undefined ? mealType : null,
+          imageUrl,
+          recognizedByAi: true,
+          createdAt: new Date(),
+        })
+        .returning();
+
+      app.logger.info(
+        { entryId: newEntry[0].id, userId: session.user.id, recognizedByAi: true },
+        'Food entry created from image analysis successfully'
+      );
+      return reply.status(201).send(newEntry[0]);
+    }
+  );
 
   // GET /api/food-entries - All entries for user, ordered by createdAt DESC
   app.fastify.get('/api/food-entries', {
