@@ -1,8 +1,8 @@
 
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
@@ -16,6 +16,7 @@ interface Group {
 }
 
 export default function GroupsScreen() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<Group[]>([]);
 
@@ -80,8 +81,13 @@ export default function GroupsScreen() {
   };
 
   const handleCreatePrivateGroup = () => {
-    console.log('User tapped Create Private Group button');
-    // TODO: Backend Integration - Navigate to create group screen
+    console.log('User tapped Create Private Group button - navigating to create screen');
+    router.push('/create-group');
+  };
+
+  const handleNotifications = () => {
+    console.log('User tapped Notifications button - navigating to notifications screen');
+    router.push('/notifications');
   };
 
   const memberCountText = (count: number) => {
@@ -107,7 +113,7 @@ export default function GroupsScreen() {
       
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Groups</Text>
-        <TouchableOpacity style={styles.notificationButton}>
+        <TouchableOpacity style={styles.notificationButton} onPress={handleNotifications}>
           <IconSymbol 
             ios_icon_name="bell.fill" 
             android_material_icon_name="notifications" 

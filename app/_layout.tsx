@@ -84,6 +84,8 @@ export default function RootLayout() {
                 <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
                 <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
                 <Stack.Screen name="camera" options={{ headerShown: true, title: 'Scan Food' }} />
+                <Stack.Screen name="create-group" options={{ headerShown: true, title: 'Create Private Group' }} />
+                <Stack.Screen name="notifications" options={{ headerShown: true, title: 'Notifications' }} />
                 <Stack.Screen name="+not-found" />
               </Stack>
             </AuthGate>
