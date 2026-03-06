@@ -22,6 +22,13 @@
       "when": 1772819658379,
       "tag": "20260306175418_ambiguous_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772822040171,
+      "tag": "20260306183400_unique_franklin_richards",
+      "breakpoints": true
     }
   ]
 }
