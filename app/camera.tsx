@@ -18,6 +18,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
+import { getBearerToken, BACKEND_URL } from '@/utils/api';
 import { authenticatedPost } from '@/utils/api';
 
 interface AnalysisResult {
@@ -113,6 +114,11 @@ export default function CameraScreen() {
     setAnalysisResult(null);
 
     try {
+      const token = await getBearerToken();
+      if (!token) {
+        throw new Error('Authentication token not found. Please sign in.');
+      }
+
       const formData = new FormData();
       
       const uriParts = imageUri.split('.');
@@ -125,11 +131,30 @@ export default function CameraScreen() {
         type: `image/${fileType}`,
       });
 
-      console.log('[API] Sending image to backend for analysis');
+      console.log('[API] Sending multipart form data to backend');
+      console.log('[API] Image URI:', imageUri);
+      console.log('[API] File type:', fileType);
 
-      const result = await authenticatedPost<AnalysisResult>('/api/food/analyze-image', formData);
+      const response = await fetch(`${BACKEND_URL}/api/food/analyze-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Don't set Content-Type - let the browser/RN set it with the boundary
+        },
+        body: formData,
+      });
 
+      console.log('[API] Response status:', response.status);
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('[API] Error response:', text);
+        throw new Error(`API error: ${response.status} - ${text}`);
+      }
+
+      const result = await response.json();
       console.log('[API] Analysis result:', result);
+      
       setAnalysisResult(result);
       setShowResultModal(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
