@@ -574,7 +574,7 @@ export default function HomeScreen() {
     { key: 'snack', label: 'Snack', icon: 'fastfood' },
     { key: 'dinner', label: 'Dinner', icon: 'dinner-dining' },
     { key: 'other', label: 'Other', icon: 'restaurant' },
-  ];
+  ] as const;
 
   const proteinValue = `${stats.totalProtein.toFixed(1)}g`;
   const carbsValue = `${stats.totalCarbs.toFixed(1)}g`;
