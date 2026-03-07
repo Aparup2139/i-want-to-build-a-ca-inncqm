@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
@@ -115,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // On iOS, if we get an SSL error, log it but don't crash
       if (Platform.OS === "ios" && error instanceof Error) {
-        if (error.message.includes("525") || error.message.includes("SSL") || error.message.includes("Network request failed")) {
+        if (error.message.includes("525") || error.message.includes("SSL") || error.message.includes("Network request failed") || error.message.includes("certificate")) {
           console.error("[iOS] SSL/Network error detected. This may be due to certificate issues in Expo Go.");
           console.error("[iOS] Error details:", error.message);
           // Don't set user to null immediately - keep existing session if we have one
@@ -192,6 +193,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInAsGuest = async () => {
     try {
       console.log("[Auth] Signing in as guest via POST /api/auth/guest");
+      
+      // Call the guest endpoint with an empty body
       const data = await apiPost<{ user: User; token: string }>("/api/auth/guest", {});
 
       console.log("[Auth] Guest sign in response:", data);
@@ -203,10 +206,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Set the guest user in state
       if (data.user) {
-        setUser(data.user as User);
+        setUser({ ...data.user, isGuest: true } as User);
       }
     } catch (error) {
       console.error("Guest sign in failed:", error);
+      
+      // Provide user-friendly error message
+      if (error instanceof Error) {
+        if (error.message.includes("404")) {
+          throw new Error("Guest sign-in is not available yet. The backend is being updated. Please try again in a moment or sign in with email/social login.");
+        } else if (error.message.includes("Network request failed") || error.message.includes("SSL")) {
+          throw new Error("Unable to connect to server. Please check your internet connection and try again.");
+        }
+      }
+      
       throw error;
     }
   };

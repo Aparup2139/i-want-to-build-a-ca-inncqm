@@ -1,3 +1,4 @@
+
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
@@ -67,7 +68,11 @@ export const apiCall = async <T = any>(
       },
     };
 
-    console.log("[API] Fetch options:", fetchOptions);
+    console.log("[API] Fetch options:", JSON.stringify({
+      method: fetchOptions.method,
+      headers: fetchOptions.headers,
+      hasBody: !!fetchOptions.body
+    }));
 
     // Always send the token if we have it (needed for cross-domain/iframe support)
     const token = await getBearerToken();
@@ -81,9 +86,29 @@ export const apiCall = async <T = any>(
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
-      const text = await response.text();
-      console.error("[API] Error response:", response.status, text);
-      throw new Error(`API error: ${response.status} - ${text}`);
+      let errorText = "";
+      try {
+        errorText = await response.text();
+      } catch (e) {
+        errorText = "Unable to read error response";
+      }
+      
+      console.error("[API] Error response:", response.status, errorText);
+      
+      // Provide user-friendly error messages
+      if (response.status === 404) {
+        throw new Error(`API error: 404 - Endpoint not found. The requested feature may not be available yet.`);
+      } else if (response.status === 401) {
+        throw new Error(`Authentication required. Please sign in again.`);
+      } else if (response.status === 403) {
+        throw new Error(`Access denied. You don't have permission to perform this action.`);
+      } else if (response.status === 429) {
+        throw new Error(`Rate limit exceeded. Please try again later.`);
+      } else if (response.status >= 500) {
+        throw new Error(`Server error (${response.status}). Please try again later.`);
+      } else {
+        throw new Error(`API error: ${response.status} - ${errorText || 'Request failed'}`);
+      }
     }
 
     const data = await response.json();
@@ -95,12 +120,12 @@ export const apiCall = async <T = any>(
     // Provide more helpful error messages for common issues
     if (error instanceof TypeError && error.message.includes("Network request failed")) {
       if (Platform.OS === "ios") {
-        throw new Error("Unable to connect to server. If you're using Expo Go, please restart the app and try again. For production builds, ensure the backend URL is accessible.");
+        throw new Error("Unable to connect to server. If you're using Expo Go, please restart the app and try again. For production builds, ensure the backend URL is accessible and SSL certificates are valid.");
       }
       throw new Error("Unable to connect to server. Please check your internet connection and try again.");
     }
     
-    if (error instanceof Error && (error.message.includes("525") || error.message.includes("SSL"))) {
+    if (error instanceof Error && (error.message.includes("525") || error.message.includes("SSL") || error.message.includes("certificate"))) {
       if (Platform.OS === "ios") {
         throw new Error("SSL connection error. Please restart the Expo Go app and try again. If the issue persists, the backend may need SSL certificate configuration.");
       }

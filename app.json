@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "i-want-to-build-a-ca",
@@ -19,7 +20,14 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
+          "NSAllowsArbitraryLoadsInWebContent": true,
           "NSExceptionDomains": {
+            "specular.dev": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.0"
+            },
             "app.specular.dev": {
               "NSExceptionAllowsInsecureHTTPLoads": true,
               "NSIncludesSubdomains": true,
@@ -27,7 +35,8 @@
               "NSExceptionMinimumTLSVersion": "TLSv1.0"
             },
             "localhost": {
-              "NSExceptionAllowsInsecureHTTPLoads": true
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
             }
           }
         },
@@ -52,7 +61,7 @@
       "expo-router",
       "expo-web-browser"
     ],
-    "scheme": "iwanttobuildaca",
+    "scheme": "calo",
     "experiments": {
       "typedRoutes": true
     },
