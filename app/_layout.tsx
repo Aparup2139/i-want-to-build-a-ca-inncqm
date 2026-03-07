@@ -1,5 +1,5 @@
 
-import { useColorScheme, View, ActivityIndicator, Linking } from "react-native";
+import { useColorScheme, View, ActivityIndicator, Linking, Platform, Text, StyleSheet } from "react-native";
 import { useFonts } from "expo-font";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -12,7 +12,7 @@ import {
 } from "@react-navigation/native";
 import "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Stack, useRouter, useSegments } from "expo-router";
@@ -100,6 +100,7 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+  const [showNetworkWarning, setShowNetworkWarning] = useState(false);
 
   useEffect(() => {
     if (loaded) {
@@ -107,8 +108,32 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  // Show network warning on iOS if not connected
+  useEffect(() => {
+    if (Platform.OS === "ios" && isConnected === false) {
+      setShowNetworkWarning(true);
+    } else {
+      setShowNetworkWarning(false);
+    }
+  }, [isConnected]);
+
   if (!loaded) {
     return null;
+  }
+
+  // Show network warning for iOS
+  if (showNetworkWarning && Platform.OS === "ios") {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>No Internet Connection</Text>
+        <Text style={styles.errorMessage}>
+          Please check your internet connection and try again.
+        </Text>
+        <Text style={styles.errorHint}>
+          If you're using Expo Go, make sure you're connected to the same network as your development machine.
+        </Text>
+      </View>
+    );
   }
 
   return (
@@ -138,3 +163,31 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#000",
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 16,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: "#ccc",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  errorHint: {
+    fontSize: 14,
+    color: "#888",
+    textAlign: "center",
+    fontStyle: "italic",
+  },
+});

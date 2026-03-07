@@ -18,8 +18,21 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        }
+          "NSAllowsArbitraryLoads": true,
+          "NSExceptionDomains": {
+            "app.specular.dev": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.0"
+            },
+            "localhost": {
+              "NSExceptionAllowsInsecureHTTPLoads": true
+            }
+          }
+        },
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to upload food images for calorie tracking.",
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos of food for calorie tracking."
       }
     },
     "android": {

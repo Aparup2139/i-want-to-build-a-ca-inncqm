@@ -94,10 +94,16 @@ export const apiCall = async <T = any>(
     
     // Provide more helpful error messages for common issues
     if (error instanceof TypeError && error.message.includes("Network request failed")) {
+      if (Platform.OS === "ios") {
+        throw new Error("Unable to connect to server. If you're using Expo Go, please restart the app and try again. For production builds, ensure the backend URL is accessible.");
+      }
       throw new Error("Unable to connect to server. Please check your internet connection and try again.");
     }
     
-    if (error instanceof Error && error.message.includes("525")) {
+    if (error instanceof Error && (error.message.includes("525") || error.message.includes("SSL"))) {
+      if (Platform.OS === "ios") {
+        throw new Error("SSL connection error. Please restart the Expo Go app and try again. If the issue persists, the backend may need SSL certificate configuration.");
+      }
       throw new Error("Server connection error. Please try again later or contact support.");
     }
     

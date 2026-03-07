@@ -26,16 +26,31 @@ export const authClient = createAuthClient({
       storage,
     }),
   ],
-  // On web, use cookies (credentials: include) and fallback to bearer token
-  ...(Platform.OS === "web" && {
-    fetchOptions: {
+  fetchOptions: {
+    // On web, use cookies (credentials: include)
+    ...(Platform.OS === "web" && {
       credentials: "include",
-      auth: {
-        type: "Bearer" as const,
-        token: () => localStorage.getItem(BEARER_TOKEN_KEY) || "",
+    }),
+    // For iOS, add additional fetch options to help with SSL
+    ...(Platform.OS === "ios" && {
+      // Ensure we're using the correct headers
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    }),
+    // Fallback to bearer token for all platforms
+    auth: {
+      type: "Bearer" as const,
+      token: async () => {
+        if (Platform.OS === "web") {
+          return localStorage.getItem(BEARER_TOKEN_KEY) || "";
+        } else {
+          return await SecureStore.getItemAsync(BEARER_TOKEN_KEY) || "";
+        }
       },
     },
-  }),
+  },
 });
 
 export async function setBearerToken(token: string) {

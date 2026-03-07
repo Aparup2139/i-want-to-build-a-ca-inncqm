@@ -109,7 +109,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error("Failed to fetch user:", error);
-      setUser(null);
+      
+      // On iOS, if we get an SSL error, log it but don't crash
+      if (Platform.OS === "ios" && error instanceof Error) {
+        if (error.message.includes("525") || error.message.includes("SSL") || error.message.includes("Network request failed")) {
+          console.error("[iOS] SSL/Network error detected. This may be due to certificate issues in Expo Go.");
+          console.error("[iOS] Error details:", error.message);
+          // Don't set user to null immediately - keep existing session if we have one
+          if (!user) {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
