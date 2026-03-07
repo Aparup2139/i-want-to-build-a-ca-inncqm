@@ -192,21 +192,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInAsGuest = async () => {
     try {
-      console.log("[Auth] Signing in as guest via POST /api/auth/guest");
+      console.log("[Auth] Signing in as guest via POST /api/guest");
       
-      // Call the guest endpoint with an empty body
-      const data = await apiPost<{ user: User; token: string }>("/api/auth/guest", {});
+      // Call the guest endpoint - returns { user: { id, email, name, isGuest, onboarding_completed, is_pro }, token }
+      const data = await apiPost<{
+        user: { id: string; email: string; name: string; isGuest: boolean; onboarding_completed: boolean; is_pro: boolean };
+        token: string;
+      }>("/api/guest", {});
 
       console.log("[Auth] Guest sign in response:", data);
 
       // Store the token so authenticated API calls work
       if (data.token) {
         await setBearerToken(data.token);
+        console.log("[Auth] Guest bearer token stored");
       }
 
       // Set the guest user in state
       if (data.user) {
-        setUser({ ...data.user, isGuest: true } as User);
+        setUser({
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          isGuest: true,
+        } as User);
+        console.log("[Auth] Guest user set in state:", data.user.id);
       }
     } catch (error) {
       console.error("Guest sign in failed:", error);
@@ -214,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Provide user-friendly error message
       if (error instanceof Error) {
         if (error.message.includes("404")) {
-          throw new Error("Guest sign-in is not available yet. The backend is being updated. Please try again in a moment or sign in with email/social login.");
+          throw new Error("Guest sign-in is not available yet. Please try again in a moment or sign in with email/social login.");
         } else if (error.message.includes("Network request failed") || error.message.includes("SSL")) {
           throw new Error("Unable to connect to server. Please check your internet connection and try again.");
         }
