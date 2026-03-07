@@ -91,6 +91,16 @@ export const apiCall = async <T = any>(
     return data;
   } catch (error) {
     console.error("[API] Request failed:", error);
+    
+    // Provide more helpful error messages for common issues
+    if (error instanceof TypeError && error.message.includes("Network request failed")) {
+      throw new Error("Unable to connect to server. Please check your internet connection and try again.");
+    }
+    
+    if (error instanceof Error && error.message.includes("525")) {
+      throw new Error("Server connection error. Please try again later or contact support.");
+    }
+    
     throw error;
   }
 };
