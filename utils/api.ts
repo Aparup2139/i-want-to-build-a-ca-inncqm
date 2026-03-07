@@ -42,7 +42,7 @@ export const apiCall = async <T = any>(
 
   try {
     const isFormData = options?.body instanceof FormData;
-    
+
     const fetchOptions: RequestInit = {
       ...options,
       headers: {
@@ -68,9 +68,9 @@ export const apiCall = async <T = any>(
       } catch (e) {
         errorText = "Unable to read error response";
       }
-      
+
       console.error("[API] Error response:", response.status, errorText);
-      
+
       if (response.status === 404) {
         throw new Error(`The requested feature is not available yet. Please try again later.`);
       } else if (response.status === 401) {
@@ -103,9 +103,9 @@ export const apiCall = async <T = any>(
     return data;
   } catch (error) {
     console.error("[API] Request failed:", error);
-    
+
     if (error instanceof TypeError && (
-      error.message.includes("Network request failed") || 
+      error.message.includes("Network request failed") ||
       error.message.includes("Failed to fetch") ||
       error.message.includes("network error")
     )) {
@@ -114,14 +114,14 @@ export const apiCall = async <T = any>(
         await delay(RETRY_DELAY * 2 * (retryCount + 1));
         return apiCall<T>(endpoint, options, retryCount + 1);
       }
-      
+
       throw new Error("Unable to connect to server. Please check your internet connection and try again.");
     }
-    
+
     if (error instanceof Error && (
-      error.message.includes("525") || 
+      error.message.includes("525") ||
       error.message.includes("526") ||
-      error.message.includes("SSL") || 
+      error.message.includes("SSL") ||
       error.message.includes("certificate") ||
       error.message.includes("handshake") ||
       error.message.includes("TLS") ||
@@ -132,10 +132,10 @@ export const apiCall = async <T = any>(
         await delay(RETRY_DELAY * 3 * (retryCount + 1));
         return apiCall<T>(endpoint, options, retryCount + 1);
       }
-      
+
       throw new Error("Connection security error. Please restart the app and try again. If the problem persists, check your network settings.");
     }
-    
+
     throw error;
   }
 };
@@ -184,11 +184,12 @@ export const apiDelete = async <T = any>(endpoint: string, data: any = {}): Prom
 export const authenticatedApiCall = async <T = any>(
   endpoint: string,
   options?: RequestInit
-): Promise<T> => {
+): Promise<T | null> => {
   const token = await getBearerToken();
 
   if (!token) {
-    throw new Error("Authentication token not found. Please sign in.");
+    console.log("[API] No auth token found, skipping authenticated request to", endpoint);
+    return null as unknown as T;
   }
 
   return apiCall<T>(endpoint, {
@@ -200,7 +201,7 @@ export const authenticatedApiCall = async <T = any>(
   });
 };
 
-export const authenticatedGet = async <T = any>(endpoint: string): Promise<T> => {
+export const authenticatedGet = async <T = any>(endpoint: string): Promise<T | null> => {
   return authenticatedApiCall<T>(endpoint, { method: "GET" });
 };
 
@@ -208,9 +209,9 @@ export const authenticatedPost = async <T = any>(
   endpoint: string,
   data: any,
   options?: { headers?: Record<string, string> }
-): Promise<T> => {
+): Promise<T | null> => {
   const isFormData = data instanceof FormData;
-  
+
   const fetchOptions: RequestInit = {
     method: "POST",
     body: isFormData ? data : JSON.stringify(data),
@@ -232,7 +233,7 @@ export const authenticatedPost = async <T = any>(
 export const authenticatedPut = async <T = any>(
   endpoint: string,
   data: any
-): Promise<T> => {
+): Promise<T | null> => {
   return authenticatedApiCall<T>(endpoint, {
     method: "PUT",
     body: JSON.stringify(data),
@@ -242,14 +243,14 @@ export const authenticatedPut = async <T = any>(
 export const authenticatedPatch = async <T = any>(
   endpoint: string,
   data: any
-): Promise<T> => {
+): Promise<T | null> => {
   return authenticatedApiCall<T>(endpoint, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 };
 
-export const authenticatedDelete = async <T = any>(endpoint: string, data: any = {}): Promise<T> => {
+export const authenticatedDelete = async <T = any>(endpoint: string, data: any = {}): Promise<T | null> => {
   return authenticatedApiCall<T>(endpoint, {
     method: "DELETE",
     body: JSON.stringify(data),
