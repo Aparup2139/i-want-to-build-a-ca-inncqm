@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -68,6 +68,24 @@ export default function CameraScreen() {
   const showError = (title: string, message: string) => {
     setErrorModal({ visible: true, title, message });
   };
+
+  // Debounce search to avoid too many API calls
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const debouncedSearch = useCallback((query: string) => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    if (!query.trim()) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    searchDebounceRef.current = setTimeout(() => {
+      searchFoodDatabase(query);
+    }, 400);
+  }, []);
 
   const checkUsageLimit = async () => {
     try {
@@ -207,22 +225,23 @@ export default function CameraScreen() {
   const searchFoodDatabase = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
+      setSearching(false);
       return;
     }
 
     console.log('[API] Searching food database:', query);
-    setSearching(true);
 
     try {
       const results = await authenticatedPost<DatabaseFood[]>('/api/food/search', {
         query: query.trim(),
       });
 
-      console.log('[API] Search results:', results);
+      console.log('[API] Search results count:', results.length, 'for query:', query);
       setSearchResults(results);
     } catch (error: any) {
       console.error('[API] Error searching food database:', error);
-      showError('Search Failed', error.message || 'Failed to search food database. Please try again.');
+      // Don't show error modal for search - just show empty state
+      setSearchResults([]);
     } finally {
       setSearching(false);
     }
@@ -671,7 +690,7 @@ export default function CameraScreen() {
                 value={searchQuery}
                 onChangeText={(text) => {
                   setSearchQuery(text);
-                  searchFoodDatabase(text);
+                  debouncedSearch(text);
                 }}
                 autoFocus
               />
@@ -688,7 +707,23 @@ export default function CameraScreen() {
                     color={colors.textSecondary}
                   />
                   <Text style={styles.emptySearchText}>No results found</Text>
-                  <Text style={styles.emptySearchSubtext}>Try a different search term</Text>
+                  <Text style={styles.emptySearchSubtext}>
+                    Try searching for: biryani, pizza, ice cream, samosa, burger, lassi
+                  </Text>
+                </View>
+              )}
+              {searchResults.length === 0 && searchQuery.trim() === '' && !searching && (
+                <View style={styles.emptySearchState}>
+                  <IconSymbol
+                    ios_icon_name="fork.knife"
+                    android_material_icon_name="restaurant"
+                    size={48}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.emptySearchText}>Search our food database</Text>
+                  <Text style={styles.emptySearchSubtext}>
+                    Indian foods, fast food, beverages, ice cream, desserts and more
+                  </Text>
                 </View>
               )}
 
