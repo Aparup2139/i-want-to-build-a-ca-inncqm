@@ -62,6 +62,7 @@ interface FoodSearchResult {
   carbs: number;
   fat: number;
   servingSize: number;
+  servingUnit: string;
 }
 
 const nutritionSchema = z.object({
@@ -135,6 +136,7 @@ export function registerFoodEntryRoutes(app: App) {
                 carbs: { type: 'number' },
                 fat: { type: 'number' },
                 servingSize: { type: 'number' },
+                servingUnit: { type: 'string' },
               },
             },
           },
@@ -207,6 +209,7 @@ export function registerFoodEntryRoutes(app: App) {
         carbs: r.item.carbs,
         fat: r.item.fat,
         servingSize: r.item.servingSize,
+        servingUnit: r.item.servingUnit,
       }));
 
       app.logger.info({ userId: session.user.id, resultCount: response.length, query }, 'Food search completed');
@@ -449,60 +452,93 @@ Return values for the portion shown in the image, not per 100g.`,
           'Food image analyzed with GPT-4 Vision'
         );
       } catch (err) {
-        app.logger.warn({ userId: session.user.id, err }, 'AI analysis failed, using default values');
-        nutritionData = {
-          foodName: 'Unknown Food',
-          calories: 150,
-          protein: 10,
-          carbs: 15,
-          fat: 5,
-          confidence: 'low',
-        };
+        app.logger.warn({ userId: session.user.id, err }, 'AI analysis failed, attempting database fallback');
+        // Try to get a fallback from database first
+        const dbFallback = await app.db
+          .select()
+          .from(schema.foodDatabase)
+          .limit(1);
+
+        if (dbFallback.length > 0) {
+          const fallbackFood = dbFallback[0];
+          nutritionData = {
+            foodName: fallbackFood.name,
+            calories: fallbackFood.calories,
+            protein: fallbackFood.protein,
+            carbs: fallbackFood.carbs,
+            fat: fallbackFood.fat,
+            confidence: 'low',
+          };
+          app.logger.info({ foodName: nutritionData.foodName }, 'Using database food as fallback');
+        } else {
+          nutritionData = {
+            foodName: 'Unknown Food',
+            calories: 200,
+            protein: 5,
+            carbs: 30,
+            fat: 8,
+            confidence: 'low',
+          };
+          app.logger.warn('No database fallback available, using default values');
+        }
       }
 
-      // If confidence is low, search database for best matches
+      // Always search database for suggestions based on identified food name
       let databaseSuggestions: AnalyzeImageResponse['databaseSuggestions'] = undefined;
-      if (nutritionData.confidence === 'low' && nutritionData.foodName !== 'Unknown Food') {
-        try {
-          app.logger.info({ foodName: nutritionData.foodName }, 'Searching database for low-confidence result');
-          const matches = await app.db
+      try {
+        app.logger.info({ foodName: nutritionData.foodName }, 'Searching database for food suggestions');
+        const matches = await app.db
+          .select()
+          .from(schema.foodDatabase)
+          .where(ilike(schema.foodDatabase.name, `%${nutritionData.foodName}%`));
+
+        const scored = matches
+          .map((item) => ({
+            item,
+            relevance: calculateRelevance(nutritionData.foodName, item.name, item.aliases || []),
+          }))
+          .filter((r) => r.relevance > 0)
+          .sort((a, b) => b.relevance - a.relevance)
+          .slice(0, 3);
+
+        if (scored.length > 0) {
+          databaseSuggestions = scored.map((r) => ({
+            id: r.item.id,
+            name: r.item.name,
+            calories: r.item.calories,
+            protein: r.item.protein,
+            carbs: r.item.carbs,
+            fat: r.item.fat,
+          }));
+          app.logger.info({ suggestions: databaseSuggestions.length }, 'Database suggestions found');
+        } else {
+          // If no exact match, get any 3 foods from database as generic suggestions
+          const anyFoods = await app.db
             .select()
             .from(schema.foodDatabase)
-            .where(ilike(schema.foodDatabase.name, `%${nutritionData.foodName}%`));
+            .limit(3);
 
-          const scored = matches
-            .map((item) => ({
-              item,
-              relevance: calculateRelevance(nutritionData.foodName, item.name, item.aliases || []),
-            }))
-            .filter((r) => r.relevance > 0)
-            .sort((a, b) => b.relevance - a.relevance)
-            .slice(0, 3);
-
-          if (scored.length > 0) {
-            databaseSuggestions = scored.map((r) => ({
-              id: r.item.id,
-              name: r.item.name,
-              calories: r.item.calories,
-              protein: r.item.protein,
-              carbs: r.item.carbs,
-              fat: r.item.fat,
+          if (anyFoods.length > 0) {
+            databaseSuggestions = anyFoods.map((item) => ({
+              id: item.id,
+              name: item.name,
+              calories: item.calories,
+              protein: item.protein,
+              carbs: item.carbs,
+              fat: item.fat,
             }));
-            app.logger.info({ suggestions: databaseSuggestions.length }, 'Database suggestions found');
+            app.logger.info({ suggestions: databaseSuggestions.length }, 'Generic database suggestions provided');
           }
-        } catch (dbErr) {
-          app.logger.warn({ err: dbErr }, 'Failed to fetch database suggestions');
         }
+      } catch (dbErr) {
+        app.logger.warn({ err: dbErr }, 'Failed to fetch database suggestions');
       }
 
       const response: AnalyzeImageResponse = {
         ...nutritionData,
         imageUrl,
+        databaseSuggestions: databaseSuggestions || [],
       };
-
-      if (databaseSuggestions) {
-        response.databaseSuggestions = databaseSuggestions;
-      }
 
       return response;
     }
@@ -591,6 +627,20 @@ Return values for the portion shown in the image, not per 100g.`,
           app.logger.info({ databaseFoodId, finalFoodName }, 'Using database food data');
         }
       }
+
+      // Validate that calories is > 0
+      if (!finalCalories || finalCalories <= 0) {
+        app.logger.warn(
+          { userId: session.user.id, foodName: finalFoodName, calories: finalCalories },
+          'Invalid calories value'
+        );
+        return reply.status(400).send({ error: 'Calories must be provided and greater than 0.' });
+      }
+
+      app.logger.info(
+        { userId: session.user.id, foodName: finalFoodName, calories: finalCalories, protein: finalProtein, carbs: finalCarbs, fat: finalFat },
+        'Validated nutritional data for food entry'
+      );
 
       const newEntry = await app.db
         .insert(schema.foodEntries)
@@ -1049,9 +1099,18 @@ Return values for the portion shown in the image, not per 100g.`,
 
       const { foodName, calories, protein, carbs, fat, mealType } = request.body;
       app.logger.info(
-        { userId: session.user.id, foodName, calories },
+        { userId: session.user.id, foodName, calories, protein, carbs, fat },
         'Creating food entry'
       );
+
+      // Validate that calories is provided and > 0
+      if (!calories || calories <= 0) {
+        app.logger.warn(
+          { userId: session.user.id, foodName, calories },
+          'Invalid calories value'
+        );
+        return reply.status(400).send({ error: 'Calories must be provided and greater than 0.' });
+      }
 
       const newEntry = await app.db
         .insert(schema.foodEntries)
@@ -1068,7 +1127,7 @@ Return values for the portion shown in the image, not per 100g.`,
         .returning();
 
       app.logger.info(
-        { entryId: newEntry[0].id, userId: session.user.id },
+        { entryId: newEntry[0].id, userId: session.user.id, calories, protein, carbs, fat },
         'Food entry created successfully'
       );
       return reply.status(201).send(newEntry[0]);

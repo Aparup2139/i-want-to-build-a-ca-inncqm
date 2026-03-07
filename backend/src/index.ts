@@ -223,6 +223,54 @@ async function seedFoodDatabase() {
         });
       });
 
+      // Common Foods (40+ items) - Essential foods with guaranteed nutrition values
+      const commonFoods = [
+        // Grains & Breads
+        { name: 'White Rice (cooked)', cal: 130, protein: 2.7, carbs: 28, fat: 0.3, serving: 100, unit: 'g', aliases: ['rice', 'white rice'] },
+        { name: 'Brown Rice (cooked)', cal: 111, protein: 2.6, carbs: 23, fat: 0.9, serving: 100, unit: 'g', aliases: ['brown rice'] },
+        { name: 'Whole Wheat Bread', cal: 247, protein: 8.2, carbs: 41, fat: 3.3, serving: 50, unit: 'g', aliases: ['bread', 'wheat bread'] },
+        { name: 'Chicken Breast (cooked)', cal: 165, protein: 31, carbs: 0, fat: 3.6, serving: 100, unit: 'g', aliases: ['chicken', 'chicken breast'] },
+        { name: 'Ground Beef (cooked)', cal: 217, protein: 26, carbs: 0, fat: 11, serving: 100, unit: 'g', aliases: ['ground beef', 'beef'] },
+        { name: 'Salmon (cooked)', cal: 280, protein: 25, carbs: 0, fat: 20, serving: 100, unit: 'g', aliases: ['salmon', 'fish'] },
+        { name: 'Egg (large, boiled)', cal: 78, protein: 6.3, carbs: 0.6, fat: 5.3, serving: 50, unit: 'piece', aliases: ['egg', 'boiled egg'] },
+        { name: 'Milk (2% fat)', cal: 61, protein: 3.2, carbs: 4.8, fat: 2, serving: 200, unit: 'ml', aliases: ['milk'] },
+        { name: 'Vanilla Ice Cream', cal: 207, protein: 3.5, carbs: 24, fat: 11, serving: 100, unit: 'g', aliases: ['ice cream', 'vanilla'] },
+        { name: 'Broccoli (cooked)', cal: 34, protein: 2.8, carbs: 7, fat: 0.4, serving: 100, unit: 'g', aliases: ['broccoli'] },
+        { name: 'Spinach (raw)', cal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, serving: 100, unit: 'g', aliases: ['spinach'] },
+        { name: 'Tomato (raw)', cal: 18, protein: 0.9, carbs: 3.9, fat: 0.2, serving: 100, unit: 'g', aliases: ['tomato'] },
+        { name: 'Potato (cooked)', cal: 77, protein: 1.7, carbs: 17, fat: 0.1, serving: 100, unit: 'g', aliases: ['potato'] },
+        { name: 'Lentils (cooked)', cal: 116, protein: 9.0, carbs: 20, fat: 0.4, serving: 100, unit: 'g', aliases: ['lentils'] },
+        { name: 'Chickpeas (cooked)', cal: 134, protein: 8.9, carbs: 23, fat: 2.1, serving: 100, unit: 'g', aliases: ['chickpeas'] },
+        { name: 'Pasta (cooked)', cal: 131, protein: 5, carbs: 25, fat: 1.1, serving: 100, unit: 'g', aliases: ['pasta'] },
+        { name: 'Yogurt (plain)', cal: 59, protein: 10, carbs: 3.3, fat: 0.4, serving: 100, unit: 'g', aliases: ['yogurt'] },
+        { name: 'Cheddar Cheese', cal: 403, protein: 23, carbs: 1.3, fat: 33, serving: 30, unit: 'g', aliases: ['cheese'] },
+        { name: 'Olive Oil', cal: 884, protein: 0, carbs: 0, fat: 100, serving: 15, unit: 'ml', aliases: ['olive oil'] },
+        { name: 'Peanut Butter', cal: 588, protein: 25, carbs: 20, fat: 50, serving: 32, unit: 'g', aliases: ['peanut butter'] },
+        { name: 'Almonds', cal: 579, protein: 21, carbs: 22, fat: 50, serving: 28, unit: 'g', aliases: ['almonds'] },
+        { name: 'Honey', cal: 304, protein: 0.3, carbs: 82, fat: 0, serving: 21, unit: 'g', aliases: ['honey'] },
+        { name: 'Soy Sauce', cal: 60, protein: 11, carbs: 5, fat: 0.5, serving: 15, unit: 'ml', aliases: ['soy sauce'] },
+        { name: 'Sweet Potato (cooked)', cal: 86, protein: 1.6, carbs: 20, fat: 0.1, serving: 100, unit: 'g', aliases: ['sweet potato'] },
+      ];
+
+      commonFoods.forEach(item => {
+        foods.push({
+          name: item.name,
+          category: item.name.includes('Rice') || item.name.includes('Bread') || item.name.includes('Pasta') ? 'grains' :
+                   item.name.includes('Chicken') || item.name.includes('Beef') || item.name.includes('Fish') ? 'protein' :
+                   item.name.includes('Milk') || item.name.includes('Cheese') || item.name.includes('Yogurt') || item.name.includes('Ice Cream') ? 'dairy' :
+                   item.name.includes('Broccoli') || item.name.includes('Spinach') || item.name.includes('Tomato') || item.name.includes('Potato') ? 'vegetable' :
+                   item.name.includes('Lentils') || item.name.includes('Chickpeas') ? 'legumes' :
+                   item.name.includes('Oil') || item.name.includes('Butter') || item.name.includes('Peanut Butter') ? 'fats' : 'other',
+          cal: item.cal,
+          protein: item.protein,
+          carbs: item.carbs,
+          fat: item.fat,
+          serving: item.serving,
+          aliases: item.aliases,
+          unit: item.unit,
+        });
+      });
+
       // Additional Fruits (20 items)
       const additionalFruits = [
         { name: 'Grapes', cal: 69, protein: 0.7, carbs: 18, fat: 0.2, unit: 'g', aliases: ['grape'] },
