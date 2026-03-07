@@ -30,6 +30,22 @@ describe("API Integration Tests", () => {
     expect(authToken).toBeDefined();
   });
 
+  test("Create guest user", async () => {
+    const res = await api("/api/guest", {
+      method: "POST",
+    });
+    await expectStatus(res, 201);
+    const data = await res.json();
+    expect(data.user).toBeDefined();
+    expect(data.user.id).toBeDefined();
+    expect(data.user.email).toBeDefined();
+    expect(data.user.name).toBeDefined();
+    expect(data.user.isGuest).toBe(true);
+    expect(typeof data.user.onboarding_completed).toBe("boolean");
+    expect(typeof data.user.is_pro).toBe("boolean");
+    expect(data.token).toBeDefined();
+  });
+
   // ===== User Profile Tests =====
 
   test("Get user profile", async () => {

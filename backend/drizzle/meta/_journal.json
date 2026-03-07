@@ -78,6 +78,13 @@
       "when": 1772883676006,
       "tag": "20260307114116_lonely_nuke",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1772887873489,
+      "tag": "20260307125113_typical_bug",
+      "breakpoints": true
     }
   ]
 }

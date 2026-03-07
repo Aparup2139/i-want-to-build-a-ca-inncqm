@@ -8,6 +8,7 @@ import { registerUsageRoutes } from './routes/usage.js';
 import { registerGroupRoutes } from './routes/groups.js';
 import { registerInvitationRoutes } from './routes/invitations.js';
 import { registerNotificationRoutes } from './routes/notifications.js';
+import { registerAuthRoutes } from './routes/auth.js';
 
 const schema = { ...appSchema, ...authSchema };
 
@@ -287,6 +288,7 @@ async function cleanupInactiveGuests() {
 setInterval(cleanupInactiveGuests, 60 * 60 * 1000);
 
 // Register routes
+registerAuthRoutes(app);
 registerFoodEntryRoutes(app);
 registerUserProfileRoutes(app);
 registerUsageRoutes(app);
