@@ -15,7 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, Redirect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { lightColors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
 import { authenticatedGet, authenticatedPost, authenticatedDelete } from '@/utils/api';
@@ -50,6 +51,7 @@ interface UserProfile {
 export default function HomeScreen() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { colors } = useTheme();
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [stats, setStats] = useState<TodayStats>({
     totalCalories: 0,
@@ -210,9 +212,11 @@ export default function HomeScreen() {
     }
   };
 
+  const dynamicStyles = createStyles(colors);
+
   if (authLoading || loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[dynamicStyles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -254,67 +258,67 @@ export default function HomeScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={dynamicStyles.container} edges={['top']}>
       <Stack.Screen
         options={{
           headerShown: false,
         }}
       />
       
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Calo</Text>
-        <Text style={styles.headerSubtitle}>Track your nutrition</Text>
+      <View style={dynamicStyles.header}>
+        <Text style={dynamicStyles.headerTitle}>Calo</Text>
+        <Text style={dynamicStyles.headerSubtitle}>Track your nutrition</Text>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={dynamicStyles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Stats Card */}
-        <View style={styles.statsCard}>
-          <View style={styles.statsHeader}>
-            <Text style={styles.statsTitle}>Today</Text>
-            <Text style={styles.statsDate}>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
+        <View style={dynamicStyles.statsCard}>
+          <View style={dynamicStyles.statsHeader}>
+            <Text style={dynamicStyles.statsTitle}>Today</Text>
+            <Text style={dynamicStyles.statsDate}>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
           </View>
           
-          <View style={styles.calorieCircle}>
-            <Text style={styles.calorieNumber}>{stats.totalCalories}</Text>
-            <Text style={styles.calorieLabel}>calories</Text>
-            <Text style={styles.calorieRemaining}>{remainingCalories} remaining</Text>
-            <Text style={styles.calorieGoal}>Goal: {calorieGoal}</Text>
+          <View style={dynamicStyles.calorieCircle}>
+            <Text style={dynamicStyles.calorieNumber}>{stats.totalCalories}</Text>
+            <Text style={dynamicStyles.calorieLabel}>calories</Text>
+            <Text style={dynamicStyles.calorieRemaining}>{remainingCalories} remaining</Text>
+            <Text style={dynamicStyles.calorieGoal}>Goal: {calorieGoal}</Text>
           </View>
 
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${calorieProgress}%` }]} />
+          <View style={dynamicStyles.progressBar}>
+            <View style={[dynamicStyles.progressFill, { width: `${calorieProgress}%` }]} />
           </View>
 
-          <View style={styles.macrosRow}>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{stats.totalProtein.toFixed(1)}g</Text>
-              <Text style={styles.macroLabel}>Protein</Text>
+          <View style={dynamicStyles.macrosRow}>
+            <View style={dynamicStyles.macroItem}>
+              <Text style={dynamicStyles.macroValue}>{stats.totalProtein.toFixed(1)}g</Text>
+              <Text style={dynamicStyles.macroLabel}>Protein</Text>
             </View>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{stats.totalCarbs.toFixed(1)}g</Text>
-              <Text style={styles.macroLabel}>Carbs</Text>
+            <View style={dynamicStyles.macroItem}>
+              <Text style={dynamicStyles.macroValue}>{stats.totalCarbs.toFixed(1)}g</Text>
+              <Text style={dynamicStyles.macroLabel}>Carbs</Text>
             </View>
-            <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{stats.totalFat.toFixed(1)}g</Text>
-              <Text style={styles.macroLabel}>Fat</Text>
+            <View style={dynamicStyles.macroItem}>
+              <Text style={dynamicStyles.macroValue}>{stats.totalFat.toFixed(1)}g</Text>
+              <Text style={dynamicStyles.macroLabel}>Fat</Text>
             </View>
           </View>
         </View>
 
         {/* Entries List by Meal Type */}
-        <View style={styles.entriesSection}>
-          <Text style={styles.sectionTitle}>Today&apos;s Meals</Text>
+        <View style={dynamicStyles.entriesSection}>
+          <Text style={dynamicStyles.sectionTitle}>Today&apos;s Meals</Text>
           
           {entries.length === 0 ? (
-            <View style={styles.emptyState}>
+            <View style={dynamicStyles.emptyState}>
               <IconSymbol
                 ios_icon_name="camera.fill"
                 android_material_icon_name="camera"
                 size={48}
                 color={colors.textSecondary}
               />
-              <Text style={styles.emptyText}>No meals logged yet</Text>
-              <Text style={styles.emptySubtext}>Tap the camera button to scan your first meal</Text>
+              <Text style={dynamicStyles.emptyText}>No meals logged yet</Text>
+              <Text style={dynamicStyles.emptySubtext}>Tap the camera button to scan your first meal</Text>
             </View>
           ) : (
             mealSections.map((section) => {
@@ -322,15 +326,15 @@ export default function HomeScreen() {
               if (sectionEntries.length === 0) return null;
 
               return (
-                <View key={section.key} style={styles.mealSection}>
-                  <View style={styles.mealSectionHeader}>
+                <View key={section.key} style={dynamicStyles.mealSection}>
+                  <View style={dynamicStyles.mealSectionHeader}>
                     <IconSymbol
                       ios_icon_name={section.icon}
                       android_material_icon_name={section.icon}
                       size={20}
                       color={colors.primary}
                     />
-                    <Text style={styles.mealSectionTitle}>{section.label}</Text>
+                    <Text style={dynamicStyles.mealSectionTitle}>{section.label}</Text>
                   </View>
 
                   {sectionEntries.map((entry) => {
@@ -340,31 +344,31 @@ export default function HomeScreen() {
                     const entryFat = entry.fat ? `${entry.fat}g` : '0g';
                     
                     return (
-                      <View key={entry.id} style={styles.entryCard}>
+                      <View key={entry.id} style={dynamicStyles.entryCard}>
                         {entry.imageUrl && (
-                          <Image source={{ uri: entry.imageUrl }} style={styles.entryImage} />
+                          <Image source={{ uri: entry.imageUrl }} style={dynamicStyles.entryImage} />
                         )}
                         
-                        <View style={styles.entryHeader}>
-                          <View style={styles.entryInfo}>
-                            <View style={styles.entryNameRow}>
-                              <Text style={styles.entryName}>{entry.foodName}</Text>
+                        <View style={dynamicStyles.entryHeader}>
+                          <View style={dynamicStyles.entryInfo}>
+                            <View style={dynamicStyles.entryNameRow}>
+                              <Text style={dynamicStyles.entryName}>{entry.foodName}</Text>
                               {entry.recognizedByAi && (
-                                <View style={styles.aiBadge}>
+                                <View style={dynamicStyles.aiBadge}>
                                   <IconSymbol
                                     ios_icon_name="sparkles"
                                     android_material_icon_name="auto-awesome"
                                     size={12}
                                     color="#FFFFFF"
                                   />
-                                  <Text style={styles.aiBadgeText}>AI</Text>
+                                  <Text style={dynamicStyles.aiBadgeText}>AI</Text>
                                 </View>
                               )}
                             </View>
                           </View>
                           <TouchableOpacity
                             onPress={() => confirmDelete(entry.id)}
-                            style={styles.deleteButton}
+                            style={dynamicStyles.deleteButton}
                           >
                             <IconSymbol
                               ios_icon_name="trash"
@@ -375,22 +379,22 @@ export default function HomeScreen() {
                           </TouchableOpacity>
                         </View>
                         
-                        <View style={styles.entryStats}>
-                          <View style={styles.entryStat}>
-                            <Text style={styles.entryStatValue}>{entryCalories}</Text>
-                            <Text style={styles.entryStatLabel}>cal</Text>
+                        <View style={dynamicStyles.entryStats}>
+                          <View style={dynamicStyles.entryStat}>
+                            <Text style={dynamicStyles.entryStatValue}>{entryCalories}</Text>
+                            <Text style={dynamicStyles.entryStatLabel}>cal</Text>
                           </View>
-                          <View style={styles.entryStat}>
-                            <Text style={styles.entryStatValue}>{entryProtein}</Text>
-                            <Text style={styles.entryStatLabel}>protein</Text>
+                          <View style={dynamicStyles.entryStat}>
+                            <Text style={dynamicStyles.entryStatValue}>{entryProtein}</Text>
+                            <Text style={dynamicStyles.entryStatLabel}>protein</Text>
                           </View>
-                          <View style={styles.entryStat}>
-                            <Text style={styles.entryStatValue}>{entryCarbs}</Text>
-                            <Text style={styles.entryStatLabel}>carbs</Text>
+                          <View style={dynamicStyles.entryStat}>
+                            <Text style={dynamicStyles.entryStatValue}>{entryCarbs}</Text>
+                            <Text style={dynamicStyles.entryStatLabel}>carbs</Text>
                           </View>
-                          <View style={styles.entryStat}>
-                            <Text style={styles.entryStatValue}>{entryFat}</Text>
-                            <Text style={styles.entryStatLabel}>fat</Text>
+                          <View style={dynamicStyles.entryStat}>
+                            <Text style={dynamicStyles.entryStatValue}>{entryFat}</Text>
+                            <Text style={dynamicStyles.entryStatLabel}>fat</Text>
                           </View>
                         </View>
                       </View>
@@ -406,9 +410,9 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* Scan Food Button - Fixed positioning to avoid tab bar */}
-      <View style={styles.fabContainer} pointerEvents="box-none">
+      <View style={dynamicStyles.fabContainer} pointerEvents="box-none">
         <TouchableOpacity
-          style={styles.fab}
+          style={dynamicStyles.fab}
           onPress={() => {
             console.log('Scan Food button tapped');
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -432,27 +436,27 @@ export default function HomeScreen() {
         transparent={true}
         onRequestClose={() => setShowDeleteModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.confirmModal}>
-            <Text style={styles.confirmTitle}>Delete Entry?</Text>
-            <Text style={styles.confirmMessage}>Are you sure you want to delete this food entry?</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={dynamicStyles.confirmModal}>
+            <Text style={dynamicStyles.confirmTitle}>Delete Entry?</Text>
+            <Text style={dynamicStyles.confirmMessage}>Are you sure you want to delete this food entry?</Text>
             
-            <View style={styles.confirmButtons}>
+            <View style={dynamicStyles.confirmButtons}>
               <TouchableOpacity
-                style={styles.confirmButtonCancel}
+                style={dynamicStyles.confirmButtonCancel}
                 onPress={() => {
                   setShowDeleteModal(false);
                   setDeleteEntryId(null);
                 }}
               >
-                <Text style={styles.confirmButtonCancelText}>Cancel</Text>
+                <Text style={dynamicStyles.confirmButtonCancelText}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={styles.confirmButtonDelete}
+                style={dynamicStyles.confirmButtonDelete}
                 onPress={handleDelete}
               >
-                <Text style={styles.confirmButtonDeleteText}>Delete</Text>
+                <Text style={dynamicStyles.confirmButtonDeleteText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -466,15 +470,15 @@ export default function HomeScreen() {
         transparent={true}
         onRequestClose={() => setErrorModal({ ...errorModal, visible: false })}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.confirmModal}>
-            <Text style={styles.confirmTitle}>{errorModal.title}</Text>
-            <Text style={styles.confirmMessage}>{errorModal.message}</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={dynamicStyles.confirmModal}>
+            <Text style={dynamicStyles.confirmTitle}>{errorModal.title}</Text>
+            <Text style={dynamicStyles.confirmMessage}>{errorModal.message}</Text>
             <TouchableOpacity
-              style={styles.confirmButtonDelete}
+              style={dynamicStyles.confirmButtonDelete}
               onPress={() => setErrorModal({ ...errorModal, visible: false })}
             >
-              <Text style={styles.confirmButtonDeleteText}>OK</Text>
+              <Text style={dynamicStyles.confirmButtonDeleteText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -483,7 +487,9 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type ThemeColors = typeof lightColors;
+
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

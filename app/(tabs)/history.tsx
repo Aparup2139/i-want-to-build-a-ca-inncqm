@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { lightColors } from '@/styles/commonStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authenticatedGet } from '@/utils/api';
 import * as Haptics from 'expo-haptics';
@@ -66,6 +67,7 @@ interface ProgressData {
 type TimePeriod = 'thisWeek' | 'lastWeek' | 'twoWeeksAgo' | 'threeWeeksAgo';
 
 export default function HistoryScreen() {
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<DayHistory[]>([]);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
@@ -185,108 +187,109 @@ export default function HistoryScreen() {
     const weekData = progressData[selectedPeriod];
     const maxCalories = Math.max(...weekData.dailyCalories, 1);
     const avgCalories = weekData.totalCalories / 7;
+    const dynamicStyles = createStyles(colors);
 
     return (
-      <View style={styles.progressSection}>
+      <View style={dynamicStyles.progressSection}>
         {/* Time Period Tabs */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.periodTabsContainer}
-          contentContainerStyle={styles.periodTabsContent}
+          style={dynamicStyles.periodTabsContainer}
+          contentContainerStyle={dynamicStyles.periodTabsContent}
         >
           <TouchableOpacity
-            style={[styles.periodTab, selectedPeriod === 'thisWeek' && styles.periodTabActive]}
+            style={[dynamicStyles.periodTab, selectedPeriod === 'thisWeek' && dynamicStyles.periodTabActive]}
             onPress={() => handlePeriodChange('thisWeek')}
           >
-            <Text style={[styles.periodTabText, selectedPeriod === 'thisWeek' && styles.periodTabTextActive]}>
+            <Text style={[dynamicStyles.periodTabText, selectedPeriod === 'thisWeek' && dynamicStyles.periodTabTextActive]}>
               This Week
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.periodTab, selectedPeriod === 'lastWeek' && styles.periodTabActive]}
+            style={[dynamicStyles.periodTab, selectedPeriod === 'lastWeek' && dynamicStyles.periodTabActive]}
             onPress={() => handlePeriodChange('lastWeek')}
           >
-            <Text style={[styles.periodTabText, selectedPeriod === 'lastWeek' && styles.periodTabTextActive]}>
+            <Text style={[dynamicStyles.periodTabText, selectedPeriod === 'lastWeek' && dynamicStyles.periodTabTextActive]}>
               Last Week
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.periodTab, selectedPeriod === 'twoWeeksAgo' && styles.periodTabActive]}
+            style={[dynamicStyles.periodTab, selectedPeriod === 'twoWeeksAgo' && dynamicStyles.periodTabActive]}
             onPress={() => handlePeriodChange('twoWeeksAgo')}
           >
-            <Text style={[styles.periodTabText, selectedPeriod === 'twoWeeksAgo' && styles.periodTabTextActive]}>
+            <Text style={[dynamicStyles.periodTabText, selectedPeriod === 'twoWeeksAgo' && dynamicStyles.periodTabTextActive]}>
               2 wks. ago
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.periodTab, selectedPeriod === 'threeWeeksAgo' && styles.periodTabActive]}
+            style={[dynamicStyles.periodTab, selectedPeriod === 'threeWeeksAgo' && dynamicStyles.periodTabActive]}
             onPress={() => handlePeriodChange('threeWeeksAgo')}
           >
-            <Text style={[styles.periodTabText, selectedPeriod === 'threeWeeksAgo' && styles.periodTabTextActive]}>
+            <Text style={[dynamicStyles.periodTabText, selectedPeriod === 'threeWeeksAgo' && dynamicStyles.periodTabTextActive]}>
               3 wks. ago
             </Text>
           </TouchableOpacity>
         </ScrollView>
 
         {/* Total Calories Card */}
-        <View style={styles.caloriesCard}>
-          <Text style={styles.caloriesCardTitle}>Total calories</Text>
-          <View style={styles.caloriesValueContainer}>
-            <Text style={styles.caloriesValue}>{avgCalories.toFixed(1)}</Text>
-            <Text style={styles.caloriesUnit}>cals</Text>
+        <View style={dynamicStyles.caloriesCard}>
+          <Text style={dynamicStyles.caloriesCardTitle}>Total calories</Text>
+          <View style={dynamicStyles.caloriesValueContainer}>
+            <Text style={dynamicStyles.caloriesValue}>{avgCalories.toFixed(1)}</Text>
+            <Text style={dynamicStyles.caloriesUnit}>cals</Text>
           </View>
 
           {/* Weekly Chart */}
-          <View style={styles.chartContainer}>
+          <View style={dynamicStyles.chartContainer}>
             {weekData.dailyCalories.map((calories, index) => {
               const heightPercent = (calories / maxCalories) * 100;
               const dayLabel = weekData.days[index];
 
               return (
-                <View key={index} style={styles.chartBar}>
-                  <View style={styles.chartBarContainer}>
-                    <View style={[styles.chartBarFill, { height: `${heightPercent}%` }]} />
+                <View key={index} style={dynamicStyles.chartBar}>
+                  <View style={dynamicStyles.chartBarContainer}>
+                    <View style={[dynamicStyles.chartBarFill, { height: `${heightPercent}%` }]} />
                   </View>
-                  <Text style={styles.chartDayLabel}>{dayLabel}</Text>
+                  <Text style={dynamicStyles.chartDayLabel}>{dayLabel}</Text>
                 </View>
               );
             })}
           </View>
 
           {/* Macro Legend */}
-          <View style={styles.macroLegend}>
-            <View style={styles.macroLegendItem}>
-              <View style={[styles.macroLegendDot, { backgroundColor: '#EF4444' }]} />
-              <Text style={styles.macroLegendText}>Protein</Text>
+          <View style={dynamicStyles.macroLegend}>
+            <View style={dynamicStyles.macroLegendItem}>
+              <View style={[dynamicStyles.macroLegendDot, { backgroundColor: '#EF4444' }]} />
+              <Text style={dynamicStyles.macroLegendText}>Protein</Text>
             </View>
-            <View style={styles.macroLegendItem}>
-              <View style={[styles.macroLegendDot, { backgroundColor: '#F59E0B' }]} />
-              <Text style={styles.macroLegendText}>Carbs</Text>
+            <View style={dynamicStyles.macroLegendItem}>
+              <View style={[dynamicStyles.macroLegendDot, { backgroundColor: '#F59E0B' }]} />
+              <Text style={dynamicStyles.macroLegendText}>Carbs</Text>
             </View>
-            <View style={styles.macroLegendItem}>
-              <View style={[styles.macroLegendDot, { backgroundColor: '#3B82F6' }]} />
-              <Text style={styles.macroLegendText}>Fats</Text>
+            <View style={dynamicStyles.macroLegendItem}>
+              <View style={[dynamicStyles.macroLegendDot, { backgroundColor: '#3B82F6' }]} />
+              <Text style={dynamicStyles.macroLegendText}>Fats</Text>
             </View>
           </View>
 
           {/* Motivational Message */}
-          <View style={styles.motivationBanner}>
-            <Text style={styles.motivationText}>Getting started is the hardest part. You&apos;re ready for this!</Text>
+          <View style={dynamicStyles.motivationBanner}>
+            <Text style={dynamicStyles.motivationText}>Getting started is the hardest part. You&apos;re ready for this!</Text>
           </View>
         </View>
 
         {/* BMI Card */}
         {progressData.bmi != null && progressData.bmiStatus != null ? (
-          <View style={styles.bmiCard}>
-            <Text style={styles.bmiCardTitle}>Your BMI</Text>
-            <View style={styles.bmiValueContainer}>
-              <Text style={styles.bmiValue}>{progressData.bmi.toFixed(2)}</Text>
-              <Text style={styles.bmiSubtext}>Your weight is</Text>
-              <View style={[styles.bmiStatusBadge, { backgroundColor: getBMIColor(progressData.bmiStatus) }]}>
-                <Text style={styles.bmiStatusText}>{progressData.bmiStatus}</Text>
+          <View style={dynamicStyles.bmiCard}>
+            <Text style={dynamicStyles.bmiCardTitle}>Your BMI</Text>
+            <View style={dynamicStyles.bmiValueContainer}>
+              <Text style={dynamicStyles.bmiValue}>{progressData.bmi.toFixed(2)}</Text>
+              <Text style={dynamicStyles.bmiSubtext}>Your weight is</Text>
+              <View style={[dynamicStyles.bmiStatusBadge, { backgroundColor: getBMIColor(progressData.bmiStatus) }]}>
+                <Text style={dynamicStyles.bmiStatusText}>{progressData.bmiStatus}</Text>
               </View>
-              <TouchableOpacity style={styles.bmiInfoButton}>
+              <TouchableOpacity style={dynamicStyles.bmiInfoButton}>
                 <IconSymbol
                   ios_icon_name="questionmark.circle"
                   android_material_icon_name="help"
@@ -297,40 +300,40 @@ export default function HistoryScreen() {
             </View>
 
             {/* BMI Scale */}
-            <View style={styles.bmiScale}>
-              <View style={styles.bmiScaleBar}>
-                <View style={[styles.bmiScaleSegment, { backgroundColor: '#3B82F6' }]} />
-                <View style={[styles.bmiScaleSegment, { backgroundColor: '#10B981' }]} />
-                <View style={[styles.bmiScaleSegment, { backgroundColor: '#F59E0B' }]} />
-                <View style={[styles.bmiScaleSegment, { backgroundColor: '#EF4444' }]} />
+            <View style={dynamicStyles.bmiScale}>
+              <View style={dynamicStyles.bmiScaleBar}>
+                <View style={[dynamicStyles.bmiScaleSegment, { backgroundColor: '#3B82F6' }]} />
+                <View style={[dynamicStyles.bmiScaleSegment, { backgroundColor: '#10B981' }]} />
+                <View style={[dynamicStyles.bmiScaleSegment, { backgroundColor: '#F59E0B' }]} />
+                <View style={[dynamicStyles.bmiScaleSegment, { backgroundColor: '#EF4444' }]} />
               </View>
-              <View style={[styles.bmiIndicator, { left: getBMIPosition(progressData.bmi) }]} />
+              <View style={[dynamicStyles.bmiIndicator, { left: getBMIPosition(progressData.bmi) }]} />
             </View>
 
             {/* BMI Legend */}
-            <View style={styles.bmiLegend}>
-              <View style={styles.bmiLegendItem}>
-                <View style={[styles.bmiLegendDot, { backgroundColor: '#3B82F6' }]} />
-                <Text style={styles.bmiLegendText}>Underweight</Text>
+            <View style={dynamicStyles.bmiLegend}>
+              <View style={dynamicStyles.bmiLegendItem}>
+                <View style={[dynamicStyles.bmiLegendDot, { backgroundColor: '#3B82F6' }]} />
+                <Text style={dynamicStyles.bmiLegendText}>Underweight</Text>
               </View>
-              <View style={styles.bmiLegendItem}>
-                <View style={[styles.bmiLegendDot, { backgroundColor: '#10B981' }]} />
-                <Text style={styles.bmiLegendText}>Healthy</Text>
+              <View style={dynamicStyles.bmiLegendItem}>
+                <View style={[dynamicStyles.bmiLegendDot, { backgroundColor: '#10B981' }]} />
+                <Text style={dynamicStyles.bmiLegendText}>Healthy</Text>
               </View>
-              <View style={styles.bmiLegendItem}>
-                <View style={[styles.bmiLegendDot, { backgroundColor: '#F59E0B' }]} />
-                <Text style={styles.bmiLegendText}>Overweight</Text>
+              <View style={dynamicStyles.bmiLegendItem}>
+                <View style={[dynamicStyles.bmiLegendDot, { backgroundColor: '#F59E0B' }]} />
+                <Text style={dynamicStyles.bmiLegendText}>Overweight</Text>
               </View>
-              <View style={styles.bmiLegendItem}>
-                <View style={[styles.bmiLegendDot, { backgroundColor: '#EF4444' }]} />
-                <Text style={styles.bmiLegendText}>Obese</Text>
+              <View style={dynamicStyles.bmiLegendItem}>
+                <View style={[dynamicStyles.bmiLegendDot, { backgroundColor: '#EF4444' }]} />
+                <Text style={dynamicStyles.bmiLegendText}>Obese</Text>
               </View>
             </View>
           </View>
         ) : (
-          <View style={styles.bmiCard}>
-            <Text style={styles.bmiCardTitle}>Your BMI</Text>
-            <Text style={styles.bmiSubtext}>
+          <View style={dynamicStyles.bmiCard}>
+            <Text style={dynamicStyles.bmiCardTitle}>Your BMI</Text>
+            <Text style={dynamicStyles.bmiSubtext}>
               Complete your profile with height and weight to see your BMI.
             </Text>
           </View>
@@ -339,16 +342,18 @@ export default function HistoryScreen() {
     );
   };
 
+  const dynamicStyles = createStyles(colors);
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={dynamicStyles.container} edges={['top']}>
       <Stack.Screen
         options={{
           headerShown: false,
         }}
       />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>History</Text>
+      <View style={dynamicStyles.header}>
+        <Text style={dynamicStyles.headerTitle}>History</Text>
         <TouchableOpacity onPress={loadHistory}>
           <IconSymbol
             ios_icon_name="arrow.clockwise"
@@ -360,21 +365,21 @@ export default function HistoryScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.loadingContainer}>
+        <View style={dynamicStyles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading history...</Text>
+          <Text style={dynamicStyles.loadingText}>Loading history...</Text>
         </View>
       ) : (
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView style={dynamicStyles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Progress Report Section */}
           {renderProgressReport()}
 
           {/* History Section */}
-          <View style={styles.historySection}>
-            <Text style={styles.sectionTitle}>Daily History</Text>
+          <View style={dynamicStyles.historySection}>
+            <Text style={dynamicStyles.sectionTitle}>Daily History</Text>
             {history.length === 0 ? (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyIconContainer}>
+              <View style={dynamicStyles.emptyState}>
+                <View style={dynamicStyles.emptyIconContainer}>
                   <IconSymbol
                     ios_icon_name="calendar"
                     android_material_icon_name="calendar-today"
@@ -382,8 +387,8 @@ export default function HistoryScreen() {
                     color={colors.textSecondary}
                   />
                 </View>
-                <Text style={styles.emptyTitle}>No History Yet</Text>
-                <Text style={styles.emptySubtitle}>
+                <Text style={dynamicStyles.emptyTitle}>No History Yet</Text>
+                <Text style={dynamicStyles.emptySubtitle}>
                   Start scanning your meals to see your food history here
                 </Text>
               </View>
@@ -393,23 +398,23 @@ export default function HistoryScreen() {
                 const dateDisplay = formatDate(day.date);
 
                 return (
-                  <View key={day.date} style={styles.dayCard}>
+                  <View key={day.date} style={dynamicStyles.dayCard}>
                     <TouchableOpacity
-                      style={styles.dayHeader}
+                      style={dynamicStyles.dayHeader}
                       onPress={() => toggleDate(day.date)}
                       activeOpacity={0.7}
                     >
-                      <View style={styles.dayHeaderLeft}>
-                        <Text style={styles.dayDate}>{dateDisplay}</Text>
-                        <Text style={styles.dayEntryCount}>
+                      <View style={dynamicStyles.dayHeaderLeft}>
+                        <Text style={dynamicStyles.dayDate}>{dateDisplay}</Text>
+                        <Text style={dynamicStyles.dayEntryCount}>
                           {day.entries.length} {day.entries.length === 1 ? 'entry' : 'entries'}
                         </Text>
                       </View>
 
-                      <View style={styles.dayHeaderRight}>
-                        <View style={styles.caloriesBadge}>
-                          <Text style={styles.caloriesText}>{day.stats.totalCalories}</Text>
-                          <Text style={styles.caloriesLabel}>cal</Text>
+                      <View style={dynamicStyles.dayHeaderRight}>
+                        <View style={dynamicStyles.caloriesBadge}>
+                          <Text style={dynamicStyles.caloriesText}>{day.stats.totalCalories}</Text>
+                          <Text style={dynamicStyles.caloriesLabel}>cal</Text>
                         </View>
                         <IconSymbol
                           ios_icon_name={isExpanded ? 'chevron.up' : 'chevron.down'}
@@ -421,50 +426,50 @@ export default function HistoryScreen() {
                     </TouchableOpacity>
 
                     {isExpanded && (
-                      <View style={styles.dayContent}>
-                        <View style={styles.macrosRow}>
-                          <View style={styles.macroItem}>
-                            <Text style={styles.macroValue}>{day.stats.totalProtein.toFixed(1)}g</Text>
-                            <Text style={styles.macroLabel}>Protein</Text>
+                      <View style={dynamicStyles.dayContent}>
+                        <View style={dynamicStyles.macrosRow}>
+                          <View style={dynamicStyles.macroItem}>
+                            <Text style={dynamicStyles.macroValue}>{day.stats.totalProtein.toFixed(1)}g</Text>
+                            <Text style={dynamicStyles.macroLabel}>Protein</Text>
                           </View>
-                          <View style={styles.macroItem}>
-                            <Text style={styles.macroValue}>{day.stats.totalCarbs.toFixed(1)}g</Text>
-                            <Text style={styles.macroLabel}>Carbs</Text>
+                          <View style={dynamicStyles.macroItem}>
+                            <Text style={dynamicStyles.macroValue}>{day.stats.totalCarbs.toFixed(1)}g</Text>
+                            <Text style={dynamicStyles.macroLabel}>Carbs</Text>
                           </View>
-                          <View style={styles.macroItem}>
-                            <Text style={styles.macroValue}>{day.stats.totalFat.toFixed(1)}g</Text>
-                            <Text style={styles.macroLabel}>Fat</Text>
+                          <View style={dynamicStyles.macroItem}>
+                            <Text style={dynamicStyles.macroValue}>{day.stats.totalFat.toFixed(1)}g</Text>
+                            <Text style={dynamicStyles.macroLabel}>Fat</Text>
                           </View>
                         </View>
 
-                        <View style={styles.entriesList}>
+                        <View style={dynamicStyles.entriesList}>
                           {day.entries.map((entry) => {
                             const mealTypeIcon = getMealTypeIcon(entry.mealType);
                             const mealTypeDisplay = entry.mealType || 'Meal';
 
                             return (
-                              <View key={entry.id} style={styles.entryCard}>
+                              <View key={entry.id} style={dynamicStyles.entryCard}>
                                 {entry.imageUrl && (
-                                  <Image source={{ uri: entry.imageUrl }} style={styles.entryImage} />
+                                  <Image source={{ uri: entry.imageUrl }} style={dynamicStyles.entryImage} />
                                 )}
-                                <View style={styles.entryContent}>
-                                  <View style={styles.entryHeader}>
-                                    <View style={styles.entryHeaderLeft}>
+                                <View style={dynamicStyles.entryContent}>
+                                  <View style={dynamicStyles.entryHeader}>
+                                    <View style={dynamicStyles.entryHeaderLeft}>
                                       <IconSymbol
                                         ios_icon_name={mealTypeIcon}
                                         android_material_icon_name={mealTypeIcon}
                                         size={16}
                                         color={colors.primary}
                                       />
-                                      <Text style={styles.entryMealType}>{mealTypeDisplay}</Text>
+                                      <Text style={dynamicStyles.entryMealType}>{mealTypeDisplay}</Text>
                                     </View>
-                                    <Text style={styles.entryCalories}>{entry.calories} cal</Text>
+                                    <Text style={dynamicStyles.entryCalories}>{entry.calories} cal</Text>
                                   </View>
-                                  <Text style={styles.entryName}>{entry.foodName}</Text>
-                                  <View style={styles.entryMacros}>
-                                    <Text style={styles.entryMacroText}>P: {entry.protein || 0}g</Text>
-                                    <Text style={styles.entryMacroText}>C: {entry.carbs || 0}g</Text>
-                                    <Text style={styles.entryMacroText}>F: {entry.fat || 0}g</Text>
+                                  <Text style={dynamicStyles.entryName}>{entry.foodName}</Text>
+                                  <View style={dynamicStyles.entryMacros}>
+                                    <Text style={dynamicStyles.entryMacroText}>P: {entry.protein || 0}g</Text>
+                                    <Text style={dynamicStyles.entryMacroText}>C: {entry.carbs || 0}g</Text>
+                                    <Text style={dynamicStyles.entryMacroText}>F: {entry.fat || 0}g</Text>
                                   </View>
                                 </View>
                               </View>
@@ -479,7 +484,7 @@ export default function HistoryScreen() {
             )}
           </View>
 
-          <View style={styles.bottomPadding} />
+          <View style={dynamicStyles.bottomPadding} />
         </ScrollView>
       )}
 
@@ -490,15 +495,15 @@ export default function HistoryScreen() {
         transparent={true}
         onRequestClose={() => setErrorModal({ ...errorModal, visible: false })}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.errorModal}>
-            <Text style={styles.errorTitle}>{errorModal.title}</Text>
-            <Text style={styles.errorMessage}>{errorModal.message}</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={dynamicStyles.errorModal}>
+            <Text style={dynamicStyles.errorTitle}>{errorModal.title}</Text>
+            <Text style={dynamicStyles.errorMessage}>{errorModal.message}</Text>
             <TouchableOpacity
-              style={styles.errorButton}
+              style={dynamicStyles.errorButton}
               onPress={() => setErrorModal({ ...errorModal, visible: false })}
             >
-              <Text style={styles.errorButtonText}>OK</Text>
+              <Text style={dynamicStyles.errorButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -507,7 +512,9 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type ThemeColors = typeof lightColors;
+
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -644,13 +651,13 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   motivationBanner: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: colors.card === '#1A1A1A' ? '#1A3A2A' : '#D1FAE5',
     borderRadius: 12,
     padding: 12,
   },
   motivationText: {
     fontSize: 13,
-    color: '#065F46',
+    color: colors.card === '#1A1A1A' ? '#FFD700' : '#065F46',
     textAlign: 'center',
     fontWeight: '600',
   },
@@ -814,11 +821,11 @@ const styles = StyleSheet.create({
   caloriesText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.background,
   },
   caloriesLabel: {
     fontSize: 12,
-    color: '#FFFFFF',
+    color: colors.background,
     marginLeft: 2,
   },
   dayContent: {

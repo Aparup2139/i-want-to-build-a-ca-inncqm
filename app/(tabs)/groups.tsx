@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { lightColors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import * as Haptics from 'expo-haptics';
@@ -29,6 +30,7 @@ interface DiscoverGroup {
 
 export default function GroupsScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [myGroups, setMyGroups] = useState<MyGroup[]>([]);
@@ -113,11 +115,13 @@ export default function GroupsScreen() {
     return { countStr, membersText };
   };
 
+  const dynamicStyles = createStyles(colors);
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={dynamicStyles.container}>
         <Stack.Screen options={{ headerShown: false }} />
-        <View style={styles.loadingContainer}>
+        <View style={dynamicStyles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
@@ -125,12 +129,12 @@ export default function GroupsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={dynamicStyles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Groups</Text>
-        <TouchableOpacity style={styles.notificationButton} onPress={handleNotifications}>
+      <View style={dynamicStyles.header}>
+        <Text style={dynamicStyles.headerTitle}>Groups</Text>
+        <TouchableOpacity style={dynamicStyles.notificationButton} onPress={handleNotifications}>
           <IconSymbol 
             ios_icon_name="bell.fill" 
             android_material_icon_name="notifications" 
@@ -141,7 +145,7 @@ export default function GroupsScreen() {
       </View>
 
       <ScrollView
-        style={styles.scrollView}
+        style={dynamicStyles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
@@ -150,8 +154,8 @@ export default function GroupsScreen() {
         {/* My Groups Section */}
         {myGroups.length > 0 && (
           <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>My Groups</Text>
+            <View style={dynamicStyles.sectionHeader}>
+              <Text style={dynamicStyles.sectionTitle}>My Groups</Text>
             </View>
 
             {myGroups.map((group) => {
@@ -161,11 +165,11 @@ export default function GroupsScreen() {
               return (
                 <TouchableOpacity
                   key={group.id}
-                  style={styles.myGroupCard}
+                  style={dynamicStyles.myGroupCard}
                   onPress={() => handleOpenGroupChat(group.id)}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.myGroupIcon}>
+                  <View style={dynamicStyles.myGroupIcon}>
                     <IconSymbol
                       ios_icon_name="person.3.fill"
                       android_material_icon_name="group"
@@ -174,36 +178,36 @@ export default function GroupsScreen() {
                     />
                   </View>
 
-                  <View style={styles.myGroupContent}>
-                    <View style={styles.myGroupHeader}>
-                      <Text style={styles.myGroupName}>{group.name}</Text>
+                  <View style={dynamicStyles.myGroupContent}>
+                    <View style={dynamicStyles.myGroupHeader}>
+                      <Text style={dynamicStyles.myGroupName}>{group.name}</Text>
                       {group.isPrivate && (
-                        <View style={styles.privateBadge}>
+                        <View style={dynamicStyles.privateBadge}>
                           <IconSymbol
                             ios_icon_name="lock.fill"
                             android_material_icon_name="lock"
                             size={12}
                             color={colors.background}
                           />
-                          <Text style={styles.privateBadgeText}>Private</Text>
+                          <Text style={dynamicStyles.privateBadgeText}>Private</Text>
                         </View>
                       )}
                     </View>
 
                     {group.description && (
-                      <Text style={styles.myGroupDescription} numberOfLines={1}>
+                      <Text style={dynamicStyles.myGroupDescription} numberOfLines={1}>
                         {group.description}
                       </Text>
                     )}
 
-                    <View style={styles.myGroupFooter}>
-                      <View style={styles.memberCountContainer}>
-                        <Text style={styles.myGroupMemberCount}>{countStr}</Text>
-                        <Text style={styles.myGroupMemberCount}> </Text>
-                        <Text style={styles.myGroupMemberCount}>{membersText}</Text>
+                    <View style={dynamicStyles.myGroupFooter}>
+                      <View style={dynamicStyles.memberCountContainer}>
+                        <Text style={dynamicStyles.myGroupMemberCount}>{countStr}</Text>
+                        <Text style={dynamicStyles.myGroupMemberCount}> </Text>
+                        <Text style={dynamicStyles.myGroupMemberCount}>{membersText}</Text>
                       </View>
-                      <View style={styles.roleBadge}>
-                        <Text style={styles.roleBadgeText}>{roleText}</Text>
+                      <View style={dynamicStyles.roleBadge}>
+                        <Text style={dynamicStyles.roleBadgeText}>{roleText}</Text>
                       </View>
                     </View>
                   </View>
@@ -221,10 +225,10 @@ export default function GroupsScreen() {
         )}
 
         {/* Discover Groups Section */}
-        <View style={styles.discoverHeader}>
-          <Text style={styles.discoverTitle}>Discover Groups</Text>
+        <View style={dynamicStyles.discoverHeader}>
+          <Text style={dynamicStyles.discoverTitle}>Discover Groups</Text>
           <TouchableOpacity 
-            style={styles.createButton}
+            style={dynamicStyles.createButton}
             onPress={handleCreatePrivateGroup}
           >
             <IconSymbol 
@@ -233,56 +237,56 @@ export default function GroupsScreen() {
               size={18} 
               color={colors.text} 
             />
-            <Text style={styles.createButtonText}>Private Group</Text>
+            <Text style={dynamicStyles.createButtonText}>Private Group</Text>
           </TouchableOpacity>
         </View>
 
         {discoverGroups.length === 0 ? (
-          <View style={styles.emptyState}>
+          <View style={dynamicStyles.emptyState}>
             <IconSymbol
               ios_icon_name="magnifyingglass"
               android_material_icon_name="search"
               size={48}
               color={colors.textSecondary}
             />
-            <Text style={styles.emptyStateText}>No groups to discover</Text>
-            <Text style={styles.emptyStateSubtext}>Check back later for new groups</Text>
+            <Text style={dynamicStyles.emptyStateText}>No groups to discover</Text>
+            <Text style={dynamicStyles.emptyStateSubtext}>Check back later for new groups</Text>
           </View>
         ) : (
           discoverGroups.map((group) => {
             const { countStr, membersText } = memberCountText(group.memberCount);
             return (
-              <View key={group.id} style={styles.groupCard}>
+              <View key={group.id} style={dynamicStyles.groupCard}>
                 <Image 
                   source={{ uri: group.imageUrl }} 
-                  style={styles.groupImage}
+                  style={dynamicStyles.groupImage}
                 />
                 
-                <View style={styles.groupContent}>
-                  <View style={styles.groupHeader}>
-                    <Text style={styles.groupName}>{group.name}</Text>
-                    <View style={styles.memberAvatars}>
+                <View style={dynamicStyles.groupContent}>
+                  <View style={dynamicStyles.groupHeader}>
+                    <Text style={dynamicStyles.groupName}>{group.name}</Text>
+                    <View style={dynamicStyles.memberAvatars}>
                       {group.memberAvatars.slice(0, 3).map((avatar, index) => (
                         <Image 
                           key={index}
                           source={{ uri: avatar }} 
-                          style={[styles.memberAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
+                          style={[dynamicStyles.memberAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
                         />
                       ))}
                     </View>
                   </View>
                   
-                  <View style={styles.memberCountContainer}>
-                    <Text style={styles.memberCount}>{countStr}</Text>
-                    <Text style={styles.memberCount}> </Text>
-                    <Text style={styles.memberCount}>{membersText}</Text>
+                  <View style={dynamicStyles.memberCountContainer}>
+                    <Text style={dynamicStyles.memberCount}>{countStr}</Text>
+                    <Text style={dynamicStyles.memberCount}> </Text>
+                    <Text style={dynamicStyles.memberCount}>{membersText}</Text>
                   </View>
                   
-                  <Text style={styles.groupDescription}>{group.description}</Text>
+                  <Text style={dynamicStyles.groupDescription}>{group.description}</Text>
                 </View>
 
                 <TouchableOpacity 
-                  style={styles.joinButton}
+                  style={dynamicStyles.joinButton}
                   onPress={() => handleJoinGroup(group.id, group.name)}
                 >
                   <IconSymbol 
@@ -291,14 +295,14 @@ export default function GroupsScreen() {
                     size={16} 
                     color={colors.text} 
                   />
-                  <Text style={styles.joinButtonText}>Join</Text>
+                  <Text style={dynamicStyles.joinButtonText}>Join</Text>
                 </TouchableOpacity>
               </View>
             );
           })
         )}
 
-        <View style={styles.bottomPadding} />
+        <View style={dynamicStyles.bottomPadding} />
       </ScrollView>
 
       {/* Error Modal */}
@@ -308,15 +312,15 @@ export default function GroupsScreen() {
         animationType="fade"
         onRequestClose={() => setErrorModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Error</Text>
-            <Text style={styles.modalMessage}>{errorModalMessage}</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={dynamicStyles.modalContent}>
+            <Text style={dynamicStyles.modalTitle}>Error</Text>
+            <Text style={dynamicStyles.modalMessage}>{errorModalMessage}</Text>
             <TouchableOpacity
-              style={styles.modalButton}
+              style={dynamicStyles.modalButton}
               onPress={() => setErrorModalVisible(false)}
             >
-              <Text style={styles.modalButtonText}>OK</Text>
+              <Text style={dynamicStyles.modalButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -329,15 +333,15 @@ export default function GroupsScreen() {
         animationType="fade"
         onRequestClose={() => setSuccessModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Success</Text>
-            <Text style={styles.modalMessage}>{successModalMessage}</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={dynamicStyles.modalContent}>
+            <Text style={dynamicStyles.modalTitle}>Success</Text>
+            <Text style={dynamicStyles.modalMessage}>{successModalMessage}</Text>
             <TouchableOpacity
-              style={styles.modalButton}
+              style={dynamicStyles.modalButton}
               onPress={() => setSuccessModalVisible(false)}
             >
-              <Text style={styles.modalButtonText}>OK</Text>
+              <Text style={dynamicStyles.modalButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -346,7 +350,9 @@ export default function GroupsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type ThemeColors = typeof lightColors;
+
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

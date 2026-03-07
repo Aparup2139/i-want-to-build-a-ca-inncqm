@@ -1,28 +1,38 @@
 
 import { StyleSheet } from 'react-native';
 
-// Calo - Fresh, healthy color palette
-export const colors = {
-  // Light theme colors
+// Light theme colors
+export const lightColors = {
   background: '#F8FAF9',
   card: '#FFFFFF',
   text: '#1A1A1A',
   textSecondary: '#6B7280',
-  primary: '#10B981', // Fresh green
+  primary: '#10B981',
   secondary: '#34D399',
-  accent: '#F59E0B', // Warm orange
+  accent: '#F59E0B',
   highlight: '#FBBF24',
   border: '#E5E7EB',
   error: '#EF4444',
   success: '#10B981',
-  
-  // Dark theme colors
-  darkBackground: '#0F172A',
-  darkCard: '#1E293B',
-  darkText: '#F1F5F9',
-  darkTextSecondary: '#94A3B8',
-  darkBorder: '#334155',
 };
+
+// Dark theme colors - Black and Golden
+export const darkColors = {
+  background: '#000000',
+  card: '#1A1A1A',
+  text: '#FFD700',
+  textSecondary: '#D4AF37',
+  primary: '#FFD700',
+  secondary: '#FFC700',
+  accent: '#FFD700',
+  highlight: '#FFA500',
+  border: '#333333',
+  error: '#FF6B6B',
+  success: '#FFD700',
+};
+
+// Default to light theme
+export const colors = lightColors;
 
 export const commonStyles = StyleSheet.create({
   container: {

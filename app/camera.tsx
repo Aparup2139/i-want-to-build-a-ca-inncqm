@@ -15,7 +15,8 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { lightColors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
 import { authenticatedPost, authenticatedGet } from '@/utils/api';
@@ -47,6 +48,7 @@ type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner';
 export default function CameraScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { colors } = useTheme();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -370,8 +372,10 @@ export default function CameraScreen() {
     { value: 'dinner', label: 'Dinner', icon: 'dinner-dining' },
   ];
 
+  const dynamicStyles = createStyles(colors);
+
   return (
-    <View style={styles.container}>
+    <View style={dynamicStyles.container}>
       <Stack.Screen
         options={{
           headerShown: true,
@@ -385,8 +389,8 @@ export default function CameraScreen() {
       />
 
       {!selectedImage ? (
-        <View style={styles.emptyState}>
-          <View style={styles.iconContainer}>
+        <View style={dynamicStyles.emptyState}>
+          <View style={dynamicStyles.iconContainer}>
             <IconSymbol
               ios_icon_name="camera.fill"
               android_material_icon_name="camera"
@@ -395,87 +399,87 @@ export default function CameraScreen() {
             />
           </View>
           
-          <Text style={styles.emptyTitle}>Scan Your Food</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={dynamicStyles.emptyTitle}>Scan Your Food</Text>
+          <Text style={dynamicStyles.emptySubtitle}>
             Take a photo of your meal and let AI automatically calculate the nutrition values
           </Text>
 
           {usageInfo && !usageInfo.is_pro && (
-            <View style={styles.usageInfo}>
-              <Text style={styles.usageText}>
+            <View style={dynamicStyles.usageInfo}>
+              <Text style={dynamicStyles.usageText}>
                 {usageInfo.scans_remaining !== undefined ? `${usageInfo.scans_remaining} scans remaining today` : 'Free: 3 scans per day'}
               </Text>
             </View>
           )}
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.primaryButton} onPress={takePhoto}>
+          <View style={dynamicStyles.buttonContainer}>
+            <TouchableOpacity style={dynamicStyles.primaryButton} onPress={takePhoto}>
               <IconSymbol
                 ios_icon_name="camera"
                 android_material_icon_name="camera"
                 size={24}
                 color="#FFFFFF"
               />
-              <Text style={styles.primaryButtonText}>Take Photo</Text>
+              <Text style={dynamicStyles.primaryButtonText}>Take Photo</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={pickFromGallery}>
+            <TouchableOpacity style={dynamicStyles.secondaryButton} onPress={pickFromGallery}>
               <IconSymbol
                 ios_icon_name="photo"
                 android_material_icon_name="image"
                 size={24}
                 color={colors.primary}
               />
-              <Text style={styles.secondaryButtonText}>Choose from Gallery</Text>
+              <Text style={dynamicStyles.secondaryButtonText}>Choose from Gallery</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.searchDatabaseButton} onPress={openManualSearch}>
+            <TouchableOpacity style={dynamicStyles.searchDatabaseButton} onPress={openManualSearch}>
               <IconSymbol
                 ios_icon_name="magnifyingglass"
                 android_material_icon_name="search"
                 size={24}
                 color={colors.textSecondary}
               />
-              <Text style={styles.searchDatabaseButtonText}>Search Food Database</Text>
+              <Text style={dynamicStyles.searchDatabaseButtonText}>Search Food Database</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.infoBox}>
+          <View style={dynamicStyles.infoBox}>
             <IconSymbol
               ios_icon_name="info.circle"
               android_material_icon_name="info"
               size={20}
               color={colors.textSecondary}
             />
-            <Text style={styles.infoText}>
+            <Text style={dynamicStyles.infoText}>
               For best results, take a clear photo with good lighting
             </Text>
           </View>
         </View>
       ) : (
-        <View style={styles.previewContainer}>
-          <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+        <View style={dynamicStyles.previewContainer}>
+          <Image source={{ uri: selectedImage }} style={dynamicStyles.previewImage} />
           
           {analyzing && (
-            <View style={styles.analyzingOverlay}>
-              <View style={styles.analyzingCard}>
+            <View style={dynamicStyles.analyzingOverlay}>
+              <View style={dynamicStyles.analyzingCard}>
                 <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={styles.analyzingText}>Analyzing your food...</Text>
-                <Text style={styles.analyzingSubtext}>This may take a few seconds</Text>
+                <Text style={dynamicStyles.analyzingText}>Analyzing your food...</Text>
+                <Text style={dynamicStyles.analyzingSubtext}>This may take a few seconds</Text>
               </View>
             </View>
           )}
 
           {!analyzing && !showResultModal && (
-            <View style={styles.retakeButtonContainer}>
-              <TouchableOpacity style={styles.retakeButton} onPress={retakePhoto}>
+            <View style={dynamicStyles.retakeButtonContainer}>
+              <TouchableOpacity style={dynamicStyles.retakeButton} onPress={retakePhoto}>
                 <IconSymbol
                   ios_icon_name="arrow.clockwise"
                   android_material_icon_name="refresh"
                   size={24}
                   color="#FFFFFF"
                 />
-                <Text style={styles.retakeButtonText}>Retake</Text>
+                <Text style={dynamicStyles.retakeButtonText}>Retake</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -489,10 +493,10 @@ export default function CameraScreen() {
         transparent={true}
         onRequestClose={() => setShowResultModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nutrition Analysis</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={dynamicStyles.modalContent}>
+            <View style={dynamicStyles.modalHeader}>
+              <Text style={dynamicStyles.modalTitle}>Nutrition Analysis</Text>
               <TouchableOpacity onPress={() => setShowResultModal(false)}>
                 <IconSymbol
                   ios_icon_name="xmark"
@@ -505,40 +509,40 @@ export default function CameraScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {selectedImage && (
-                <Image source={{ uri: selectedImage }} style={styles.resultImage} />
+                <Image source={{ uri: selectedImage }} style={dynamicStyles.resultImage} />
               )}
 
               {analysisResult && (
                 <>
-                  <View style={styles.confidenceContainer}>
-                    <Text style={styles.confidenceLabel}>Confidence:</Text>
-                    <View style={[styles.confidenceBadge, { backgroundColor: confidenceColor }]}>
-                      <Text style={styles.confidenceText}>{confidenceText}</Text>
+                  <View style={dynamicStyles.confidenceContainer}>
+                    <Text style={dynamicStyles.confidenceLabel}>Confidence:</Text>
+                    <View style={[dynamicStyles.confidenceBadge, { backgroundColor: confidenceColor }]}>
+                      <Text style={dynamicStyles.confidenceText}>{confidenceText}</Text>
                     </View>
                   </View>
 
                   {analysisResult.confidence === 'low' && (
-                    <View style={styles.warningBox}>
+                    <View style={dynamicStyles.warningBox}>
                       <IconSymbol
                         ios_icon_name="exclamationmark.triangle"
                         android_material_icon_name="warning"
                         size={20}
                         color={colors.accent}
                       />
-                      <Text style={styles.warningText}>
+                      <Text style={dynamicStyles.warningText}>
                         Low confidence detection. You can search our database for the correct food item.
                       </Text>
                     </View>
                   )}
 
-                  <View style={styles.resultCard}>
-                    <View style={styles.resultHeader}>
+                  <View style={dynamicStyles.resultCard}>
+                    <View style={dynamicStyles.resultHeader}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.resultLabel}>Food Name</Text>
-                        <Text style={styles.resultValue}>{analysisResult.foodName}</Text>
+                        <Text style={dynamicStyles.resultLabel}>Food Name</Text>
+                        <Text style={dynamicStyles.resultValue}>{analysisResult.foodName}</Text>
                       </View>
                       <TouchableOpacity
-                        style={styles.searchButton}
+                        style={dynamicStyles.searchButton}
                         onPress={openManualSearch}
                       >
                         <IconSymbol
@@ -547,18 +551,18 @@ export default function CameraScreen() {
                           size={20}
                           color={colors.primary}
                         />
-                        <Text style={styles.searchButtonText}>Search</Text>
+                        <Text style={dynamicStyles.searchButtonText}>Search</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
 
                   {analysisResult.databaseSuggestions && analysisResult.databaseSuggestions.length > 0 && (
-                    <View style={styles.suggestionsCard}>
-                      <Text style={styles.suggestionsTitle}>Database Suggestions:</Text>
+                    <View style={dynamicStyles.suggestionsCard}>
+                      <Text style={dynamicStyles.suggestionsTitle}>Database Suggestions:</Text>
                       {analysisResult.databaseSuggestions.slice(0, 3).map((suggestion) => (
                         <TouchableOpacity
                           key={suggestion.id}
-                          style={styles.suggestionItem}
+                          style={dynamicStyles.suggestionItem}
                           onPress={() => selectDatabaseFood({
                             ...suggestion,
                             category: suggestion.category || 'other',
@@ -566,43 +570,43 @@ export default function CameraScreen() {
                           })}
                         >
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.suggestionName}>{suggestion.name}</Text>
-                            <Text style={styles.suggestionCategory}>{suggestion.category?.replace('_', ' ')}</Text>
+                            <Text style={dynamicStyles.suggestionName}>{suggestion.name}</Text>
+                            <Text style={dynamicStyles.suggestionCategory}>{suggestion.category?.replace('_', ' ')}</Text>
                           </View>
-                          <Text style={styles.suggestionCalories}>{Math.round(suggestion.calories)} cal</Text>
+                          <Text style={dynamicStyles.suggestionCalories}>{Math.round(suggestion.calories)} cal</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
                   )}
 
-                  <View style={styles.nutritionGrid}>
-                    <View style={styles.nutritionItem}>
-                      <Text style={styles.nutritionValue}>{analysisResult.calories}</Text>
-                      <Text style={styles.nutritionLabel}>Calories</Text>
+                  <View style={dynamicStyles.nutritionGrid}>
+                    <View style={dynamicStyles.nutritionItem}>
+                      <Text style={dynamicStyles.nutritionValue}>{analysisResult.calories}</Text>
+                      <Text style={dynamicStyles.nutritionLabel}>Calories</Text>
                     </View>
-                    <View style={styles.nutritionItem}>
-                      <Text style={styles.nutritionValue}>{analysisResult.protein}g</Text>
-                      <Text style={styles.nutritionLabel}>Protein</Text>
+                    <View style={dynamicStyles.nutritionItem}>
+                      <Text style={dynamicStyles.nutritionValue}>{analysisResult.protein}g</Text>
+                      <Text style={dynamicStyles.nutritionLabel}>Protein</Text>
                     </View>
-                    <View style={styles.nutritionItem}>
-                      <Text style={styles.nutritionValue}>{analysisResult.carbs}g</Text>
-                      <Text style={styles.nutritionLabel}>Carbs</Text>
+                    <View style={dynamicStyles.nutritionItem}>
+                      <Text style={dynamicStyles.nutritionValue}>{analysisResult.carbs}g</Text>
+                      <Text style={dynamicStyles.nutritionLabel}>Carbs</Text>
                     </View>
-                    <View style={styles.nutritionItem}>
-                      <Text style={styles.nutritionValue}>{analysisResult.fat}g</Text>
-                      <Text style={styles.nutritionLabel}>Fat</Text>
+                    <View style={dynamicStyles.nutritionItem}>
+                      <Text style={dynamicStyles.nutritionValue}>{analysisResult.fat}g</Text>
+                      <Text style={dynamicStyles.nutritionLabel}>Fat</Text>
                     </View>
                   </View>
 
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>Meal Type</Text>
-                    <View style={styles.mealTypeGrid}>
+                  <View style={dynamicStyles.formGroup}>
+                    <Text style={dynamicStyles.label}>Meal Type</Text>
+                    <View style={dynamicStyles.mealTypeGrid}>
                       {mealTypeOptions.map((option) => (
                         <TouchableOpacity
                           key={option.value}
                           style={[
-                            styles.mealTypeButton,
-                            mealType === option.value && styles.mealTypeButtonSelected,
+                            dynamicStyles.mealTypeButton,
+                            mealType === option.value && dynamicStyles.mealTypeButtonSelected,
                           ]}
                           onPress={() => {
                             setMealType(option.value);
@@ -617,8 +621,8 @@ export default function CameraScreen() {
                           />
                           <Text
                             style={[
-                              styles.mealTypeText,
-                              mealType === option.value && styles.mealTypeTextSelected,
+                              dynamicStyles.mealTypeText,
+                              mealType === option.value && dynamicStyles.mealTypeTextSelected,
                             ]}
                           >
                             {option.label}
@@ -628,23 +632,23 @@ export default function CameraScreen() {
                     </View>
                   </View>
 
-                  <View style={styles.actionButtons}>
+                  <View style={dynamicStyles.actionButtons}>
                     <TouchableOpacity
-                      style={styles.retakeButtonSecondary}
+                      style={dynamicStyles.retakeButtonSecondary}
                       onPress={retakePhoto}
                     >
-                      <Text style={styles.retakeButtonSecondaryText}>Retake</Text>
+                      <Text style={dynamicStyles.retakeButtonSecondaryText}>Retake</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+                      style={[dynamicStyles.saveButton, saving && dynamicStyles.saveButtonDisabled]}
                       onPress={saveEntry}
                       disabled={saving}
                     >
                       {saving ? (
                         <ActivityIndicator color="#FFFFFF" />
                       ) : (
-                        <Text style={styles.saveButtonText}>Save Entry</Text>
+                        <Text style={dynamicStyles.saveButtonText}>Save Entry</Text>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -662,10 +666,10 @@ export default function CameraScreen() {
         transparent={true}
         onRequestClose={() => setShowManualSearch(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.searchModalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Search Food Database</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={dynamicStyles.searchModalContent}>
+            <View style={dynamicStyles.modalHeader}>
+              <Text style={dynamicStyles.modalTitle}>Search Food Database</Text>
               <TouchableOpacity onPress={() => setShowManualSearch(false)}>
                 <IconSymbol
                   ios_icon_name="xmark"
@@ -676,7 +680,7 @@ export default function CameraScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.searchInputContainer}>
+            <View style={dynamicStyles.searchInputContainer}>
               <IconSymbol
                 ios_icon_name="magnifyingglass"
                 android_material_icon_name="search"
@@ -684,8 +688,8 @@ export default function CameraScreen() {
                 color={colors.textSecondary}
               />
               <TextInput
-                style={styles.searchInput}
-                placeholder="Search for food (e.g., biryani, pizza, ice cream)"
+                style={dynamicStyles.searchInput}
+                placeholder="Search for food (e.g., chow mein, gulab jamun, apple)"
                 placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={(text) => {
@@ -697,32 +701,32 @@ export default function CameraScreen() {
               {searching && <ActivityIndicator size="small" color={colors.primary} />}
             </View>
 
-            <ScrollView style={styles.searchResultsContainer} showsVerticalScrollIndicator={false}>
+            <ScrollView style={dynamicStyles.searchResultsContainer} showsVerticalScrollIndicator={false}>
               {searchResults.length === 0 && searchQuery.trim() !== '' && !searching && (
-                <View style={styles.emptySearchState}>
+                <View style={dynamicStyles.emptySearchState}>
                   <IconSymbol
                     ios_icon_name="magnifyingglass"
                     android_material_icon_name="search"
                     size={48}
                     color={colors.textSecondary}
                   />
-                  <Text style={styles.emptySearchText}>No results found</Text>
-                  <Text style={styles.emptySearchSubtext}>
-                    Try searching for: biryani, pizza, ice cream, samosa, burger, lassi
+                  <Text style={dynamicStyles.emptySearchText}>No results found</Text>
+                  <Text style={dynamicStyles.emptySearchSubtext}>
+                    Try: chow mein, fried rice, gulab jamun, apple, scrambled eggs
                   </Text>
                 </View>
               )}
               {searchResults.length === 0 && searchQuery.trim() === '' && !searching && (
-                <View style={styles.emptySearchState}>
+                <View style={dynamicStyles.emptySearchState}>
                   <IconSymbol
                     ios_icon_name="fork.knife"
                     android_material_icon_name="restaurant"
                     size={48}
                     color={colors.textSecondary}
                   />
-                  <Text style={styles.emptySearchText}>Search our food database</Text>
-                  <Text style={styles.emptySearchSubtext}>
-                    Indian foods, fast food, beverages, ice cream, desserts and more
+                  <Text style={dynamicStyles.emptySearchText}>Search our food database</Text>
+                  <Text style={dynamicStyles.emptySearchSubtext}>
+                    Chinese dishes, Indian sweets, fruits, eggs, beverages and more
                   </Text>
                 </View>
               )}
@@ -730,24 +734,24 @@ export default function CameraScreen() {
               {searchResults.map((food) => (
                 <TouchableOpacity
                   key={food.id}
-                  style={styles.searchResultItem}
+                  style={dynamicStyles.searchResultItem}
                   onPress={() => selectDatabaseFood(food)}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.searchResultName}>{food.name}</Text>
-                    <Text style={styles.searchResultCategory}>{food.category?.replace('_', ' ')}</Text>
-                    <View style={styles.searchResultMacros}>
-                      <Text style={styles.searchResultMacroText}>P: {Math.round(food.protein)}g</Text>
-                      <Text style={styles.searchResultMacroText}>C: {Math.round(food.carbs)}g</Text>
-                      <Text style={styles.searchResultMacroText}>F: {Math.round(food.fat)}g</Text>
+                    <Text style={dynamicStyles.searchResultName}>{food.name}</Text>
+                    <Text style={dynamicStyles.searchResultCategory}>{food.category?.replace('_', ' ')}</Text>
+                    <View style={dynamicStyles.searchResultMacros}>
+                      <Text style={dynamicStyles.searchResultMacroText}>P: {Math.round(food.protein)}g</Text>
+                      <Text style={dynamicStyles.searchResultMacroText}>C: {Math.round(food.carbs)}g</Text>
+                      <Text style={dynamicStyles.searchResultMacroText}>F: {Math.round(food.fat)}g</Text>
                     </View>
                     {food.servingSize && (
-                      <Text style={styles.searchResultServingText}>per {food.servingSize}g serving</Text>
+                      <Text style={dynamicStyles.searchResultServingText}>per {food.servingSize}g serving</Text>
                     )}
                   </View>
-                  <View style={styles.searchResultCaloriesContainer}>
-                    <Text style={styles.searchResultCalories}>{Math.round(food.calories)}</Text>
-                    <Text style={styles.searchResultCaloriesLabel}>cal</Text>
+                  <View style={dynamicStyles.searchResultCaloriesContainer}>
+                    <Text style={dynamicStyles.searchResultCalories}>{Math.round(food.calories)}</Text>
+                    <Text style={dynamicStyles.searchResultCaloriesLabel}>cal</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -763,15 +767,15 @@ export default function CameraScreen() {
         transparent={true}
         onRequestClose={() => setErrorModal({ ...errorModal, visible: false })}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.errorModal}>
-            <Text style={styles.errorTitle}>{errorModal.title}</Text>
-            <Text style={styles.errorMessage}>{errorModal.message}</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={dynamicStyles.errorModal}>
+            <Text style={dynamicStyles.errorTitle}>{errorModal.title}</Text>
+            <Text style={dynamicStyles.errorMessage}>{errorModal.message}</Text>
             <TouchableOpacity
-              style={styles.errorButton}
+              style={dynamicStyles.errorButton}
               onPress={() => setErrorModal({ ...errorModal, visible: false })}
             >
-              <Text style={styles.errorButtonText}>OK</Text>
+              <Text style={dynamicStyles.errorButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -780,7 +784,9 @@ export default function CameraScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type ThemeColors = typeof lightColors;
+
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

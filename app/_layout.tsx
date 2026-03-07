@@ -15,6 +15,7 @@ import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useCallback, useState } from "react";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider as CustomThemeProvider } from "@/contexts/ThemeContext";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -132,10 +133,11 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SystemBars style="auto" />
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-          <AuthProvider>
-            <WidgetProvider>
-              <NetworkStatusMonitor />
-              <AuthGate>
+          <CustomThemeProvider>
+            <AuthProvider>
+              <WidgetProvider>
+                <NetworkStatusMonitor />
+                <AuthGate>
                 <Stack>
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                   <Stack.Screen name="auth" options={{ headerShown: false }} />
@@ -148,10 +150,11 @@ export default function RootLayout() {
                   <Stack.Screen name="join-group/[token]" options={{ headerShown: true, title: 'Join Group' }} />
                   <Stack.Screen name="+not-found" />
                 </Stack>
-              </AuthGate>
-              <StatusBar style="auto" />
-            </WidgetProvider>
-          </AuthProvider>
+                </AuthGate>
+                <StatusBar style="auto" />
+              </WidgetProvider>
+            </AuthProvider>
+          </CustomThemeProvider>
         </ThemeProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

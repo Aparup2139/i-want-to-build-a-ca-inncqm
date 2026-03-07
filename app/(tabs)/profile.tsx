@@ -4,9 +4,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors } from '@/styles/commonStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { lightColors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { authenticatedGet } from '@/utils/api';
+import * as Haptics from 'expo-haptics';
 
 interface UserProfile {
   userId: string;
@@ -33,6 +35,7 @@ interface UsageInfo {
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { colors, isDarkMode, toggleTheme } = useTheme();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -81,6 +84,12 @@ export default function ProfileScreen() {
     router.push('/onboarding');
   };
 
+  const handleToggleTheme = () => {
+    console.log('User tapped Theme Toggle button');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    toggleTheme();
+  };
+
   const getGoalLabel = (goal?: string) => {
     switch (goal) {
       case 'lose_weight': return 'Lose Weight';
@@ -104,23 +113,24 @@ export default function ProfileScreen() {
 
   const userName = user?.name || 'User';
   const userEmail = user?.email || 'No email';
+  const dynamicStyles = createStyles(colors);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={dynamicStyles.container} edges={['top']}>
       <Stack.Screen
         options={{
           headerShown: false,
         }}
       />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+      <View style={dynamicStyles.header}>
+        <Text style={dynamicStyles.headerTitle}>Profile</Text>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={dynamicStyles.scrollView} showsVerticalScrollIndicator={false}>
         {/* User Info Card */}
-        <View style={styles.userCard}>
-          <View style={styles.avatarContainer}>
+        <View style={dynamicStyles.userCard}>
+          <View style={dynamicStyles.avatarContainer}>
             <IconSymbol
               ios_icon_name="person.circle.fill"
               android_material_icon_name="account-circle"
@@ -128,77 +138,102 @@ export default function ProfileScreen() {
               color={colors.primary}
             />
           </View>
-          <Text style={styles.userName}>{userName}</Text>
-          <Text style={styles.userEmail}>{userEmail}</Text>
+          <Text style={dynamicStyles.userName}>{userName}</Text>
+          <Text style={dynamicStyles.userEmail}>{userEmail}</Text>
           {user?.isGuest && (
-            <View style={styles.guestBadge}>
+            <View style={dynamicStyles.guestBadge}>
               <IconSymbol
                 ios_icon_name="person.crop.circle.badge.clock"
                 android_material_icon_name="schedule"
                 size={14}
                 color="#FFFFFF"
               />
-              <Text style={styles.guestBadgeText}>GUEST</Text>
+              <Text style={dynamicStyles.guestBadgeText}>GUEST</Text>
             </View>
           )}
           {profile?.is_pro && !user?.isGuest && (
-            <View style={styles.proBadge}>
+            <View style={dynamicStyles.proBadge}>
               <IconSymbol
                 ios_icon_name="star.fill"
                 android_material_icon_name="star"
                 size={14}
                 color="#FFFFFF"
               />
-              <Text style={styles.proBadgeText}>PRO</Text>
+              <Text style={dynamicStyles.proBadgeText}>PRO</Text>
             </View>
           )}
         </View>
 
+        {/* Dark Mode Toggle */}
+        <TouchableOpacity style={[dynamicStyles.themeToggleCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleToggleTheme}>
+          <View style={dynamicStyles.themeToggleLeft}>
+            <View style={[dynamicStyles.themeIconContainer, { backgroundColor: isDarkMode ? '#FFD700' : colors.primary }]}>
+              <IconSymbol
+                ios_icon_name={isDarkMode ? 'moon.fill' : 'sun.max.fill'}
+                android_material_icon_name={isDarkMode ? 'nightlight' : 'wb-sunny'}
+                size={24}
+                color={isDarkMode ? '#000000' : '#FFFFFF'}
+              />
+            </View>
+            <View>
+              <Text style={[dynamicStyles.themeToggleTitle, { color: colors.text }]}>
+                {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+              </Text>
+              <Text style={[dynamicStyles.themeToggleSubtitle, { color: colors.textSecondary }]}>
+                {isDarkMode ? 'Black & Golden theme' : 'Fresh & Clean theme'}
+              </Text>
+            </View>
+          </View>
+          <View style={[dynamicStyles.toggleSwitch, { backgroundColor: isDarkMode ? '#FFD700' : colors.border }]}>
+            <View style={[dynamicStyles.toggleKnob, { transform: [{ translateX: isDarkMode ? 22 : 2 }], backgroundColor: isDarkMode ? '#000000' : '#FFFFFF' }]} />
+          </View>
+        </TouchableOpacity>
+
         {/* Guest Warning Card */}
         {user?.isGuest && (
-          <View style={styles.guestWarningCard}>
-            <View style={styles.guestWarningHeader}>
+          <View style={dynamicStyles.guestWarningCard}>
+            <View style={dynamicStyles.guestWarningHeader}>
               <IconSymbol
                 ios_icon_name="exclamationmark.triangle.fill"
                 android_material_icon_name="warning"
                 size={24}
                 color="#FF9500"
               />
-              <Text style={styles.guestWarningTitle}>Guest Account</Text>
+              <Text style={dynamicStyles.guestWarningTitle}>Guest Account</Text>
             </View>
-            <Text style={styles.guestWarningText}>
+            <Text style={dynamicStyles.guestWarningText}>
               You're using a temporary guest account. Your data will be deleted after 7 days of inactivity. Sign up to save your progress!
             </Text>
-            <TouchableOpacity style={styles.guestUpgradeButton} onPress={() => router.push('/auth')}>
-              <Text style={styles.guestUpgradeButtonText}>Create Account</Text>
+            <TouchableOpacity style={dynamicStyles.guestUpgradeButton} onPress={() => router.push('/auth')}>
+              <Text style={dynamicStyles.guestUpgradeButtonText}>Create Account</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Usage Card */}
         {!loadingProfile && usage && (
-          <View style={styles.usageCard}>
-            <View style={styles.usageHeader}>
-              <Text style={styles.usageTitle}>Today's Usage</Text>
+          <View style={dynamicStyles.usageCard}>
+            <View style={dynamicStyles.usageHeader}>
+              <Text style={dynamicStyles.usageTitle}>Today's Usage</Text>
               {usage.is_pro ? (
-                <View style={styles.proTag}>
-                  <Text style={styles.proTagText}>Unlimited</Text>
+                <View style={dynamicStyles.proTag}>
+                  <Text style={dynamicStyles.proTagText}>Unlimited</Text>
                 </View>
               ) : (
-                <Text style={styles.usageSubtitle}>{usage.scans_remaining} scans remaining</Text>
+                <Text style={dynamicStyles.usageSubtitle}>{usage.scans_remaining} scans remaining</Text>
               )}
             </View>
             {!usage.is_pro && (
-              <View style={styles.usageBar}>
+              <View style={dynamicStyles.usageBar}>
                 <View
                   style={[
-                    styles.usageBarFill,
+                    dynamicStyles.usageBarFill,
                     { width: `${Math.min((usage.scans_count / (user?.isGuest ? 3 : 10)) * 100, 100)}%` },
                   ]}
                 />
               </View>
             )}
-            <Text style={styles.usageDetail}>
+            <Text style={dynamicStyles.usageDetail}>
               {usage.is_pro
                 ? `${usage.scans_count} scans today (Pro: unlimited)`
                 : user?.isGuest
@@ -210,74 +245,74 @@ export default function ProfileScreen() {
 
         {/* Stats Section */}
         {loadingProfile ? (
-          <View style={styles.loadingContainer}>
+          <View style={dynamicStyles.loadingContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
           </View>
         ) : profile ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>My Stats</Text>
+          <View style={dynamicStyles.section}>
+            <View style={dynamicStyles.sectionHeaderRow}>
+              <Text style={dynamicStyles.sectionTitle}>My Stats</Text>
               <TouchableOpacity onPress={handleEditProfile}>
-                <Text style={styles.editLink}>Edit</Text>
+                <Text style={dynamicStyles.editLink}>Edit</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{profile.daily_calorie_target || '—'}</Text>
-                <Text style={styles.statLabel}>Daily Goal (cal)</Text>
+            <View style={dynamicStyles.statsGrid}>
+              <View style={dynamicStyles.statCard}>
+                <Text style={dynamicStyles.statValue}>{profile.daily_calorie_target || '—'}</Text>
+                <Text style={dynamicStyles.statLabel}>Daily Goal (cal)</Text>
               </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{profile.weight_kg ? `${profile.weight_kg}kg` : '—'}</Text>
-                <Text style={styles.statLabel}>Weight</Text>
+              <View style={dynamicStyles.statCard}>
+                <Text style={dynamicStyles.statValue}>{profile.weight_kg ? `${profile.weight_kg}kg` : '—'}</Text>
+                <Text style={dynamicStyles.statLabel}>Weight</Text>
               </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{profile.height_cm ? `${profile.height_cm}cm` : '—'}</Text>
-                <Text style={styles.statLabel}>Height</Text>
+              <View style={dynamicStyles.statCard}>
+                <Text style={dynamicStyles.statValue}>{profile.height_cm ? `${profile.height_cm}cm` : '—'}</Text>
+                <Text style={dynamicStyles.statLabel}>Height</Text>
               </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{profile.age || '—'}</Text>
-                <Text style={styles.statLabel}>Age</Text>
+              <View style={dynamicStyles.statCard}>
+                <Text style={dynamicStyles.statValue}>{profile.age || '—'}</Text>
+                <Text style={dynamicStyles.statLabel}>Age</Text>
               </View>
             </View>
 
-            <View style={styles.settingItem}>
-              <View style={styles.settingLeft}>
+            <View style={dynamicStyles.settingItem}>
+              <View style={dynamicStyles.settingLeft}>
                 <IconSymbol
                   ios_icon_name="target"
                   android_material_icon_name="flag"
                   size={24}
                   color={colors.text}
                 />
-                <Text style={styles.settingText}>Goal</Text>
+                <Text style={dynamicStyles.settingText}>Goal</Text>
               </View>
-              <Text style={styles.settingValue}>{getGoalLabel(profile.goal)}</Text>
+              <Text style={dynamicStyles.settingValue}>{getGoalLabel(profile.goal)}</Text>
             </View>
 
-            <View style={styles.settingItem}>
-              <View style={styles.settingLeft}>
+            <View style={dynamicStyles.settingItem}>
+              <View style={dynamicStyles.settingLeft}>
                 <IconSymbol
                   ios_icon_name="figure.walk"
                   android_material_icon_name="directions-walk"
                   size={24}
                   color={colors.text}
                 />
-                <Text style={styles.settingText}>Activity Level</Text>
+                <Text style={dynamicStyles.settingText}>Activity Level</Text>
               </View>
-              <Text style={styles.settingValue}>{getActivityLabel(profile.activity_level)}</Text>
+              <Text style={dynamicStyles.settingValue}>{getActivityLabel(profile.activity_level)}</Text>
             </View>
 
-            <View style={styles.settingItem}>
-              <View style={styles.settingLeft}>
+            <View style={dynamicStyles.settingItem}>
+              <View style={dynamicStyles.settingLeft}>
                 <IconSymbol
                   ios_icon_name="person.fill"
                   android_material_icon_name="person"
                   size={24}
                   color={colors.text}
                 />
-                <Text style={styles.settingText}>Gender</Text>
+                <Text style={dynamicStyles.settingText}>Gender</Text>
               </View>
-              <Text style={styles.settingValue}>
+              <Text style={dynamicStyles.settingValue}>
                 {profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : 'Not set'}
               </Text>
             </View>
@@ -286,43 +321,43 @@ export default function ProfileScreen() {
 
         {/* Subscription Section */}
         {!loadingProfile && profile && !profile.is_pro && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Subscription</Text>
-            <View style={styles.proCard}>
-              <View style={styles.proCardHeader}>
+          <View style={dynamicStyles.section}>
+            <Text style={dynamicStyles.sectionTitle}>Subscription</Text>
+            <View style={dynamicStyles.proCard}>
+              <View style={dynamicStyles.proCardHeader}>
                 <IconSymbol
                   ios_icon_name="star.fill"
                   android_material_icon_name="star"
                   size={28}
                   color={colors.accent}
                 />
-                <Text style={styles.proCardTitle}>Upgrade to Pro</Text>
+                <Text style={dynamicStyles.proCardTitle}>Upgrade to Pro</Text>
               </View>
-              <Text style={styles.proCardDescription}>
+              <Text style={dynamicStyles.proCardDescription}>
                 Get unlimited food scans and access to full history beyond 7 days.
               </Text>
-              <View style={styles.proFeatureList}>
-                <Text style={styles.proFeature}>✓ Unlimited daily food scans</Text>
-                <Text style={styles.proFeature}>✓ Full history (no 7-day limit)</Text>
-                <Text style={styles.proFeature}>✓ Priority AI analysis</Text>
+              <View style={dynamicStyles.proFeatureList}>
+                <Text style={dynamicStyles.proFeature}>✓ Unlimited daily food scans</Text>
+                <Text style={dynamicStyles.proFeature}>✓ Full history (no 7-day limit)</Text>
+                <Text style={dynamicStyles.proFeature}>✓ Priority AI analysis</Text>
               </View>
             </View>
           </View>
         )}
 
         {/* About Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
+        <View style={dynamicStyles.section}>
+          <Text style={dynamicStyles.sectionTitle}>About</Text>
           
-          <TouchableOpacity style={styles.settingItem}>
-            <View style={styles.settingLeft}>
+          <TouchableOpacity style={dynamicStyles.settingItem}>
+            <View style={dynamicStyles.settingLeft}>
               <IconSymbol
                 ios_icon_name="info.circle"
                 android_material_icon_name="info"
                 size={24}
                 color={colors.text}
               />
-              <Text style={styles.settingText}>Help & Support</Text>
+              <Text style={dynamicStyles.settingText}>Help & Support</Text>
             </View>
             <IconSymbol
               ios_icon_name="chevron.right"
@@ -332,15 +367,15 @@ export default function ProfileScreen() {
             />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
-            <View style={styles.settingLeft}>
+          <TouchableOpacity style={dynamicStyles.settingItem}>
+            <View style={dynamicStyles.settingLeft}>
               <IconSymbol
                 ios_icon_name="doc.text"
                 android_material_icon_name="description"
                 size={24}
                 color={colors.text}
               />
-              <Text style={styles.settingText}>Privacy Policy</Text>
+              <Text style={dynamicStyles.settingText}>Privacy Policy</Text>
             </View>
             <IconSymbol
               ios_icon_name="chevron.right"
@@ -352,14 +387,14 @@ export default function ProfileScreen() {
         </View>
 
         {/* Sign Out Button */}
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+        <TouchableOpacity style={dynamicStyles.signOutButton} onPress={handleSignOut}>
           <IconSymbol
             ios_icon_name="arrow.right.square"
             android_material_icon_name="logout"
             size={24}
             color={colors.error}
           />
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={dynamicStyles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
 
         <View style={{ height: 100 }} />
@@ -372,15 +407,15 @@ export default function ProfileScreen() {
         transparent={true}
         onRequestClose={() => setErrorModal({ ...errorModal, visible: false })}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.errorModal}>
-            <Text style={styles.errorModalTitle}>Error</Text>
-            <Text style={styles.errorModalMessage}>{errorModal.message}</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={dynamicStyles.errorModal}>
+            <Text style={dynamicStyles.errorModalTitle}>Error</Text>
+            <Text style={dynamicStyles.errorModalMessage}>{errorModal.message}</Text>
             <TouchableOpacity
-              style={styles.errorModalButton}
+              style={dynamicStyles.errorModalButton}
               onPress={() => setErrorModal({ ...errorModal, visible: false })}
             >
-              <Text style={styles.errorModalButtonText}>OK</Text>
+              <Text style={dynamicStyles.errorModalButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -389,7 +424,9 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+type ThemeColors = typeof lightColors;
+
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -726,5 +763,56 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  themeToggleCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+  },
+  themeToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  themeIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  themeToggleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  themeToggleSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  toggleSwitch: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
 });
