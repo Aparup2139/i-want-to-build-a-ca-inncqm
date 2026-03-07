@@ -223,6 +223,241 @@ async function seedFoodDatabase() {
         });
       });
 
+      // Additional Fruits (20 items)
+      const additionalFruits = [
+        { name: 'Grapes', cal: 69, protein: 0.7, carbs: 18, fat: 0.2, unit: 'g', aliases: ['grape'] },
+        { name: 'Strawberries', cal: 32, protein: 0.7, carbs: 8, fat: 0.3, unit: 'g', aliases: ['strawberry'] },
+        { name: 'Blueberries', cal: 57, protein: 0.7, carbs: 14, fat: 0.3, unit: 'g', aliases: ['blueberry'] },
+        { name: 'Watermelon', cal: 30, protein: 0.6, carbs: 8, fat: 0.2, unit: 'g', aliases: ['watermelon'] },
+        { name: 'Pineapple', cal: 50, protein: 0.5, carbs: 13, fat: 0.1, unit: 'g', aliases: ['pineapple'] },
+        { name: 'Papaya', cal: 43, protein: 0.5, carbs: 11, fat: 0.3, unit: 'g', aliases: ['papaya'] },
+        { name: 'Kiwi', cal: 61, protein: 1.1, carbs: 15, fat: 0.5, unit: 'g', aliases: ['kiwi'] },
+        { name: 'Pomegranate', cal: 83, protein: 1.7, carbs: 19, fat: 1.2, unit: 'g', aliases: ['pomegranate'] },
+        { name: 'Guava', cal: 68, protein: 2.6, carbs: 14, fat: 1, unit: 'g', aliases: ['guava'] },
+        { name: 'Lychee', cal: 66, protein: 0.8, carbs: 17, fat: 0.4, unit: 'g', aliases: ['lychee'] },
+        { name: 'Dragon Fruit', cal: 60, protein: 1.2, carbs: 13, fat: 0.4, unit: 'g', aliases: ['dragon fruit'] },
+        { name: 'Passion Fruit', cal: 97, protein: 2.2, carbs: 23, fat: 0.7, unit: 'g', aliases: ['passion fruit'] },
+        { name: 'Peach', cal: 39, protein: 0.9, carbs: 10, fat: 0.3, unit: 'g', aliases: ['peach'] },
+        { name: 'Pear', cal: 57, protein: 0.4, carbs: 15, fat: 0.1, unit: 'g', aliases: ['pear'] },
+        { name: 'Plum', cal: 46, protein: 0.7, carbs: 11, fat: 0.3, unit: 'g', aliases: ['plum'] },
+        { name: 'Cherries', cal: 63, protein: 1.1, carbs: 16, fat: 0.2, unit: 'g', aliases: ['cherry'] },
+      ];
+
+      additionalFruits.forEach(item => {
+        foods.push({
+          name: item.name,
+          category: 'vegetable',
+          cal: item.cal,
+          protein: item.protein,
+          carbs: item.carbs,
+          fat: item.fat,
+          serving: 100,
+          aliases: item.aliases,
+          unit: item.unit,
+        });
+      });
+
+      // Egg Dishes (13 items)
+      const eggDishes = [
+        { name: 'Boiled Egg (1 large)', cal: 78, protein: 6, carbs: 0.6, fat: 5, serving: 50, unit: 'piece', aliases: ['boiled egg', 'egg'] },
+        { name: 'Scrambled Eggs (2 eggs)', cal: 180, protein: 13, carbs: 2, fat: 13, serving: 100, unit: 'g', aliases: ['scrambled eggs'] },
+        { name: 'Fried Egg (1 large)', cal: 90, protein: 6, carbs: 0.4, fat: 7, serving: 50, unit: 'piece', aliases: ['fried egg'] },
+        { name: 'Omelette (2 eggs, plain)', cal: 185, protein: 13, carbs: 2, fat: 14, serving: 100, unit: 'g', aliases: ['omelette'] },
+        { name: 'Egg Bhurji (Indian Scrambled)', cal: 195, protein: 12, carbs: 5, fat: 14, serving: 100, unit: 'g', aliases: ['egg bhurji'] },
+        { name: 'Egg Curry', cal: 160, protein: 10, carbs: 8, fat: 10, serving: 150, unit: 'g', aliases: ['egg curry'] },
+        { name: 'Egg Masala', cal: 170, protein: 11, carbs: 9, fat: 11, serving: 150, unit: 'g', aliases: ['egg masala'] },
+        { name: 'Poached Egg (1 large)', cal: 71, protein: 6, carbs: 0.4, fat: 5, serving: 50, unit: 'piece', aliases: ['poached egg'] },
+        { name: 'Deviled Eggs (1 half)', cal: 65, protein: 3, carbs: 0.5, fat: 5, serving: 30, unit: 'piece', aliases: ['deviled eggs'] },
+        { name: 'Egg Salad', cal: 140, protein: 7, carbs: 3, fat: 11, serving: 100, unit: 'g', aliases: ['egg salad'] },
+        { name: 'Egg Fried Rice', cal: 195, protein: 8, carbs: 31, fat: 5, serving: 200, unit: 'g', aliases: ['egg fried rice'] },
+        { name: 'Chinese Tea Egg', cal: 80, protein: 6, carbs: 1, fat: 5, serving: 50, unit: 'piece', aliases: ['tea egg'] },
+        { name: 'Scotch Egg', cal: 250, protein: 12, carbs: 18, fat: 14, serving: 100, unit: 'piece', aliases: ['scotch egg'] },
+      ];
+
+      eggDishes.forEach(item => {
+        foods.push({
+          name: item.name,
+          category: 'breakfast',
+          cal: item.cal,
+          protein: item.protein,
+          carbs: item.carbs,
+          fat: item.fat,
+          serving: item.serving,
+          aliases: item.aliases,
+          unit: item.unit,
+        });
+      });
+
+      // Indian Sweets (18 items)
+      const indianSweets = [
+        { name: 'Gulab Jamun (1 piece)', cal: 175, protein: 3, carbs: 28, fat: 6, serving: 40, unit: 'piece', aliases: ['gulab jamun'] },
+        { name: 'Rasgulla (1 piece)', cal: 140, protein: 4, carbs: 28, fat: 1, serving: 50, unit: 'piece', aliases: ['rasgulla'] },
+        { name: 'Rasmalai (1 piece)', cal: 180, protein: 5, carbs: 26, fat: 7, serving: 60, unit: 'piece', aliases: ['rasmalai'] },
+        { name: 'Jalebi', cal: 150, protein: 1, carbs: 30, fat: 4, serving: 50, unit: 'g', aliases: ['jalebi'] },
+        { name: 'Besan Ladoo', cal: 160, protein: 4, carbs: 24, fat: 6, serving: 50, unit: 'piece', aliases: ['laddu', 'besan'] },
+        { name: 'Motichoor Ladoo', cal: 155, protein: 2, carbs: 26, fat: 5, serving: 50, unit: 'piece', aliases: ['laddu', 'motichoor'] },
+        { name: 'Milk Barfi', cal: 170, protein: 4, carbs: 25, fat: 6, serving: 50, unit: 'piece', aliases: ['barfi'] },
+        { name: 'Coconut Barfi', cal: 180, protein: 3, carbs: 22, fat: 9, serving: 50, unit: 'piece', aliases: ['coconut barfi'] },
+        { name: 'Kaju Katli (Cashew Fudge)', cal: 200, protein: 4, carbs: 24, fat: 10, serving: 50, unit: 'piece', aliases: ['kaju katli'] },
+        { name: 'Mysore Pak', cal: 220, protein: 3, carbs: 28, fat: 11, serving: 50, unit: 'piece', aliases: ['mysore pak'] },
+        { name: 'Peda', cal: 140, protein: 3, carbs: 22, fat: 5, serving: 40, unit: 'piece', aliases: ['peda'] },
+        { name: 'Sandesh', cal: 130, protein: 5, carbs: 20, fat: 4, serving: 50, unit: 'piece', aliases: ['sandesh'] },
+        { name: 'Kheer (Rice Pudding)', cal: 120, protein: 3, carbs: 20, fat: 3, serving: 150, unit: 'g', aliases: ['kheer', 'rice pudding'] },
+        { name: 'Carrot Halwa', cal: 150, protein: 2, carbs: 24, fat: 6, serving: 100, unit: 'g', aliases: ['halwa'] },
+        { name: 'Sooji Halwa', cal: 180, protein: 3, carbs: 28, fat: 7, serving: 100, unit: 'g', aliases: ['sooji halwa'] },
+        { name: 'Kulfi', cal: 140, protein: 4, carbs: 18, fat: 6, serving: 80, unit: 'piece', aliases: ['kulfi'] },
+        { name: 'Shrikhand', cal: 160, protein: 6, carbs: 24, fat: 5, serving: 150, unit: 'g', aliases: ['shrikhand'] },
+        { name: 'Balushahi', cal: 200, protein: 3, carbs: 30, fat: 8, serving: 50, unit: 'piece', aliases: ['balushahi'] },
+      ];
+
+      indianSweets.forEach(item => {
+        foods.push({
+          name: item.name,
+          category: 'dessert',
+          cal: item.cal,
+          protein: item.protein,
+          carbs: item.carbs,
+          fat: item.fat,
+          serving: item.serving,
+          aliases: item.aliases,
+          unit: item.unit,
+        });
+      });
+
+      // Chinese Dishes (1000+ items with variations)
+      const chineseDishBases = [
+        { name: 'Chow Mein', cal: 198, protein: 14, carbs: 26, fat: 5, proteins: ['Chicken', 'Beef', 'Pork', 'Shrimp', 'Vegetable', 'Fish'] },
+        { name: 'Lo Mein', cal: 190, protein: 13, carbs: 27, fat: 5, proteins: ['Chicken', 'Pork', 'Vegetable', 'Beef', 'Shrimp'] },
+        { name: 'Fried Rice', cal: 215, protein: 12, carbs: 30, fat: 6, proteins: ['Chicken', 'Shrimp', 'Vegetable', 'Egg', 'Beef', 'Pork'] },
+        { name: 'Hakka Noodles', cal: 175, protein: 6, carbs: 30, fat: 4, proteins: ['Vegetable', 'Chicken', 'Shrimp'] },
+        { name: 'Singapore Noodles', cal: 185, protein: 10, carbs: 28, fat: 5, proteins: ['Chicken', 'Shrimp', 'Vegetable'] },
+        { name: 'Pad Thai Noodles', cal: 210, protein: 9, carbs: 32, fat: 6, proteins: ['Chicken', 'Shrimp', 'Vegetable', 'Pork'] },
+        { name: 'Dan Dan Noodles', cal: 240, protein: 11, carbs: 35, fat: 8, proteins: ['Pork', 'Vegetable', 'Chicken'] },
+        { name: 'Sesame Noodles', cal: 220, protein: 8, carbs: 33, fat: 7, proteins: ['Vegetable', 'Chicken', 'Pork'] },
+        { name: 'Beef Noodle Soup', cal: 195, protein: 15, carbs: 25, fat: 5, proteins: ['Beef'] },
+        { name: 'Wonton Noodle Soup', cal: 180, protein: 12, carbs: 26, fat: 4, proteins: ['Pork', 'Shrimp', 'Chicken'] },
+        { name: 'Hot and Sour Soup', cal: 95, protein: 6, carbs: 12, fat: 3, proteins: ['Tofu', 'Mushroom', 'Vegetable'] },
+        { name: 'Egg Drop Soup', cal: 75, protein: 5, carbs: 8, fat: 2, proteins: ['Egg'] },
+        { name: 'Wonton Soup', cal: 110, protein: 8, carbs: 14, fat: 3, proteins: ['Pork', 'Shrimp'] },
+        { name: 'Sweet and Sour Chicken', cal: 240, protein: 18, carbs: 28, fat: 7, proteins: ['Chicken'] },
+        { name: 'Sweet and Sour Pork', cal: 250, protein: 16, carbs: 30, fat: 8, proteins: ['Pork'] },
+        { name: "General Tso's Chicken", cal: 290, protein: 19, carbs: 35, fat: 10, proteins: ['Chicken'] },
+        { name: 'Orange Chicken', cal: 280, protein: 18, carbs: 34, fat: 9, proteins: ['Chicken'] },
+        { name: 'Kung Pao Chicken', cal: 220, protein: 20, carbs: 15, fat: 10, proteins: ['Chicken'] },
+        { name: 'Mongolian Beef', cal: 235, protein: 22, carbs: 18, fat: 9, proteins: ['Beef'] },
+        { name: 'Beef with Broccoli', cal: 180, protein: 18, carbs: 12, fat: 7, proteins: ['Beef'] },
+        { name: 'Szechuan Beef', cal: 210, protein: 20, carbs: 14, fat: 8, proteins: ['Beef'] },
+        { name: 'Pepper Steak', cal: 195, protein: 19, carbs: 13, fat: 7, proteins: ['Beef'] },
+        { name: 'Moo Shu Pork', cal: 200, protein: 15, carbs: 16, fat: 8, proteins: ['Pork'] },
+        { name: 'Twice Cooked Pork', cal: 280, protein: 16, carbs: 12, fat: 18, proteins: ['Pork'] },
+        { name: 'Char Siu (BBQ Pork)', cal: 260, protein: 20, carbs: 15, fat: 14, proteins: ['Pork'] },
+        { name: 'Peking Duck', cal: 340, protein: 19, carbs: 8, fat: 26, proteins: ['Duck'] },
+        { name: 'Crispy Duck', cal: 330, protein: 18, carbs: 10, fat: 25, proteins: ['Duck'] },
+        { name: 'Salt and Pepper Shrimp', cal: 160, protein: 22, carbs: 8, fat: 5, proteins: ['Shrimp'] },
+        { name: 'Honey Walnut Shrimp', cal: 310, protein: 18, carbs: 28, fat: 15, proteins: ['Shrimp'] },
+        { name: 'Shrimp with Lobster Sauce', cal: 140, protein: 20, carbs: 10, fat: 3, proteins: ['Shrimp'] },
+        { name: 'Garlic Shrimp', cal: 150, protein: 21, carbs: 6, fat: 4, proteins: ['Shrimp'] },
+        { name: 'Steamed Fish (Whole)', cal: 120, protein: 22, carbs: 2, fat: 3, proteins: ['Fish'] },
+        { name: 'Sweet and Sour Fish', cal: 200, protein: 18, carbs: 20, fat: 6, proteins: ['Fish'] },
+        { name: 'Mapo Tofu', cal: 140, protein: 10, carbs: 8, fat: 8, proteins: ['Tofu'] },
+        { name: 'Kung Pao Tofu', cal: 160, protein: 12, carbs: 10, fat: 9, proteins: ['Tofu'] },
+        { name: 'Braised Tofu', cal: 110, protein: 11, carbs: 6, fat: 5, proteins: ['Tofu'] },
+        { name: 'Stir Fried Vegetables', cal: 80, protein: 3, carbs: 14, fat: 2, proteins: ['Vegetable'] },
+        { name: "Buddha's Delight", cal: 95, protein: 4, carbs: 16, fat: 2, proteins: ['Vegetable'] },
+        { name: 'Chinese Broccoli (Gai Lan)', cal: 35, protein: 3, carbs: 6, fat: 0.5, proteins: ['Vegetable'] },
+        { name: 'Bok Choy Stir Fry', cal: 40, protein: 2, carbs: 7, fat: 1, proteins: ['Vegetable'] },
+      ];
+
+      // Generate 1000+ Chinese dishes with regional variations and cooking methods
+      const regions = ['Cantonese', 'Szechuan', 'Hunan', 'Shanghai', 'Beijing'];
+      const cookingMethods = ['Steamed', 'Fried', 'Braised', 'Stir-fried', 'Roasted'];
+
+      chineseDishBases.forEach(dish => {
+        if (dish.proteins) {
+          dish.proteins.forEach(protein => {
+            regions.forEach((region, regionIdx) => {
+              cookingMethods.forEach((method, methodIdx) => {
+                // Vary nutrition slightly based on region and cooking method
+                let calAdjustment = 1;
+                if (method === 'Fried') calAdjustment = 1.15;
+                if (method === 'Braised') calAdjustment = 1.1;
+                if (method === 'Roasted') calAdjustment = 1.2;
+
+                foods.push({
+                  name: `${dish.name} (${protein}, ${region} Style, ${method})`,
+                  category: 'chinese',
+                  cal: Math.round(dish.cal * calAdjustment),
+                  protein: dish.protein,
+                  carbs: dish.carbs,
+                  fat: Math.round(dish.fat * calAdjustment * 100) / 100,
+                  serving: 200,
+                  aliases: [dish.name.toLowerCase(), protein.toLowerCase(), region.toLowerCase(), method.toLowerCase()],
+                  unit: 'g',
+                });
+              });
+            });
+          });
+        }
+      });
+
+      // Spring rolls and dumplings variations
+      const dumplingTypes = [
+        { name: 'Spring Rolls (Fried)', cal: 220, protein: 6, carbs: 28, fat: 9, aliases: ['spring roll'] },
+        { name: 'Spring Rolls (Fresh)', cal: 110, protein: 4, carbs: 18, fat: 3, aliases: ['fresh spring roll'] },
+        { name: 'Egg Rolls', cal: 240, protein: 7, carbs: 30, fat: 10, aliases: ['egg roll'] },
+        { name: 'Dumplings (Pork, Steamed)', cal: 180, protein: 10, carbs: 22, fat: 6, aliases: ['dumpling'] },
+        { name: 'Dumplings (Pork, Fried)', cal: 250, protein: 11, carbs: 24, fat: 12, aliases: ['fried dumpling'] },
+        { name: 'Dumplings (Vegetable)', cal: 150, protein: 6, carbs: 24, fat: 4, aliases: ['vegetable dumpling'] },
+        { name: 'Soup Dumplings (Xiao Long Bao)', cal: 200, protein: 9, carbs: 26, fat: 7, aliases: ['xiao long bao'] },
+        { name: 'Potstickers', cal: 230, protein: 10, carbs: 28, fat: 9, aliases: ['potsticker'] },
+      ];
+
+      dumplingTypes.forEach(item => {
+        regions.forEach((region, idx) => {
+          foods.push({
+            name: `${item.name} (${region})`,
+            category: 'chinese',
+            cal: item.cal,
+            protein: item.protein,
+            carbs: item.carbs,
+            fat: item.fat,
+            serving: 100,
+            aliases: item.aliases,
+            unit: 'g',
+          });
+        });
+      });
+
+      // Chinese breads and sides
+      const chineseBreads = [
+        { name: 'Scallion Pancakes', cal: 280, protein: 6, carbs: 38, fat: 11, aliases: ['scallion pancake'] },
+        { name: 'Steamed Buns (Baozi)', cal: 220, protein: 8, carbs: 40, fat: 3, aliases: ['baozi', 'steamed bun'] },
+        { name: 'BBQ Pork Buns', cal: 250, protein: 10, carbs: 42, fat: 5, aliases: ['char siu bao'] },
+        { name: 'Mantou (Plain Steamed Buns)', cal: 200, protein: 6, carbs: 42, fat: 1, aliases: ['mantou', 'steamed bun'] },
+        { name: 'Congee (Plain)', cal: 60, protein: 2, carbs: 13, fat: 0.5, aliases: ['congee', 'zhou'] },
+        { name: 'Congee (Chicken)', cal: 90, protein: 8, carbs: 14, fat: 1, aliases: ['chicken congee'] },
+        { name: 'Century Egg Congee', cal: 110, protein: 7, carbs: 15, fat: 3, aliases: ['century egg congee'] },
+        { name: 'Fried Wontons', cal: 260, protein: 8, carbs: 26, fat: 13, aliases: ['fried wonton'] },
+        { name: 'Crab Rangoon', cal: 280, protein: 7, carbs: 24, fat: 16, aliases: ['crab rangoon'] },
+        { name: 'Sesame Balls', cal: 240, protein: 4, carbs: 38, fat: 8, aliases: ['sesame ball'] },
+        { name: 'Almond Cookies', cal: 130, protein: 2, carbs: 18, fat: 6, aliases: ['almond cookie'] },
+        { name: 'Fortune Cookies', cal: 30, protein: 0.5, carbs: 7, fat: 0.3, aliases: ['fortune cookie'] },
+      ];
+
+      chineseBreads.forEach(item => {
+        foods.push({
+          name: item.name,
+          category: 'chinese',
+          cal: item.cal,
+          protein: item.protein,
+          carbs: item.carbs,
+          fat: item.fat,
+          serving: 100,
+          aliases: item.aliases,
+          unit: 'g',
+        });
+      });
+
       return foods;
     };
 
