@@ -19,6 +19,29 @@ import { ThemeProvider as CustomThemeProvider } from "@/contexts/ThemeContext";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
+// Global error handler to suppress Expo update errors
+if (typeof ErrorUtils !== 'undefined') {
+  const originalHandler = ErrorUtils.getGlobalHandler();
+  ErrorUtils.setGlobalHandler((error, isFatal) => {
+    const errorMessage = error?.message || error?.toString() || '';
+    const isExpoUpdateError = 
+      errorMessage.includes('java.io.IOException') ||
+      errorMessage.includes('Failed to download remote update') ||
+      errorMessage.includes('IOException');
+
+    if (isExpoUpdateError) {
+      // Silently suppress Expo update errors - they're harmless during development
+      console.log('[GlobalErrorHandler] Suppressed Expo update error');
+      return;
+    }
+
+    // For all other errors, call the original handler
+    if (originalHandler) {
+      originalHandler(error, isFatal);
+    }
+  });
+}
+
 SplashScreen.preventAutoHideAsync();
 
 function AuthGate({ children }: { children: React.ReactNode }) {

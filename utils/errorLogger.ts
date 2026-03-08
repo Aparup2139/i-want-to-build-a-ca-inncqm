@@ -17,6 +17,10 @@ const clearLogAfterDelay = (logKey: string) => {
 const MUTED_MESSAGES = [
   'each child in a list should have a unique "key" prop',
   'Each child in a list should have a unique "key" prop',
+  'java.io.IOException',
+  'Failed to download remote update',
+  'IOException',
+  'Uncaught Error: java.io.IOException',
 ];
 
 // Check if a message should be muted

@@ -33,6 +33,19 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Suppress Expo Go update errors (these are harmless and happen during development)
+    const errorMessage = error?.message || error?.toString() || '';
+    const isExpoUpdateError = 
+      errorMessage.includes('java.io.IOException') ||
+      errorMessage.includes('Failed to download remote update') ||
+      errorMessage.includes('IOException');
+
+    if (isExpoUpdateError) {
+      // Silently ignore Expo update errors - they don't affect app functionality
+      console.log('[ErrorBoundary] Suppressed Expo update error:', errorMessage);
+      return;
+    }
+
     console.error("Error caught by boundary:", error, errorInfo);
 
     this.setState({
