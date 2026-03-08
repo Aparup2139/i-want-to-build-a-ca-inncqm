@@ -51,6 +51,15 @@
               "NSThirdPartyExceptionRequiresForwardSecrecy": false,
               "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0"
             },
+            "cloudflaressl.com": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.0",
+              "NSThirdPartyExceptionAllowsInsecureHTTPLoads": true,
+              "NSThirdPartyExceptionRequiresForwardSecrecy": false,
+              "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0"
+            },
             "localhost": {
               "NSExceptionAllowsInsecureHTTPLoads": true,
               "NSIncludesSubdomains": true,

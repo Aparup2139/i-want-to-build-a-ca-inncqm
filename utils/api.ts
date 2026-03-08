@@ -23,10 +23,51 @@ export const getBearerToken = async (): Promise<string | null> => {
   }
 };
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
+const MAX_RETRIES = 5;
+const INITIAL_RETRY_DELAY = 1000;
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const isSSLError = (error: any): boolean => {
+  if (!error) return false;
+  
+  const errorString = error.toString().toLowerCase();
+  const messageString = error.message?.toLowerCase() || '';
+  
+  return (
+    errorString.includes('ssl') ||
+    errorString.includes('tls') ||
+    errorString.includes('certificate') ||
+    errorString.includes('handshake') ||
+    errorString.includes('cert') ||
+    errorString.includes('secure connection') ||
+    messageString.includes('ssl') ||
+    messageString.includes('tls') ||
+    messageString.includes('certificate') ||
+    messageString.includes('handshake') ||
+    messageString.includes('cert') ||
+    messageString.includes('secure connection')
+  );
+};
+
+const isNetworkError = (error: any): boolean => {
+  if (!error) return false;
+  
+  const errorString = error.toString().toLowerCase();
+  const messageString = error.message?.toLowerCase() || '';
+  
+  return (
+    error instanceof TypeError ||
+    errorString.includes('network request failed') ||
+    errorString.includes('failed to fetch') ||
+    errorString.includes('network error') ||
+    errorString.includes('connection') ||
+    messageString.includes('network request failed') ||
+    messageString.includes('failed to fetch') ||
+    messageString.includes('network error') ||
+    messageString.includes('connection')
+  );
+};
 
 export const apiCall = async <T = any>(
   endpoint: string,
@@ -51,6 +92,14 @@ export const apiCall = async <T = any>(
       },
     };
 
+    if (Platform.OS === 'ios') {
+      fetchOptions.headers = {
+        ...fetchOptions.headers,
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache',
+      };
+    }
+
     const token = await getBearerToken();
     if (token) {
       fetchOptions.headers = {
@@ -59,81 +108,96 @@ export const apiCall = async <T = any>(
       };
     }
 
-    const response = await fetch(url, fetchOptions);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-    if (!response.ok) {
-      let errorText = "";
-      try {
-        errorText = await response.text();
-      } catch (e) {
-        errorText = "Unable to read error response";
-      }
-      
-      console.error("[API] Error response:", response.status, errorText);
-      
-      if (response.status === 404) {
-        throw new Error(`The requested feature is not available yet. Please try again later.`);
-      } else if (response.status === 401) {
-        throw new Error(`Authentication required. Please sign in again.`);
-      } else if (response.status === 403) {
-        throw new Error(`Access denied. You don't have permission to perform this action.`);
-      } else if (response.status === 429) {
-        throw new Error(`Too many requests. Please wait a moment and try again.`);
-      } else if (response.status === 525 || response.status === 526) {
-        if (retryCount < MAX_RETRIES) {
-          console.log(`[API] SSL handshake error (${response.status}), retrying in ${RETRY_DELAY * 2}ms...`);
-          await delay(RETRY_DELAY * 2 * (retryCount + 1));
-          return apiCall<T>(endpoint, options, retryCount + 1);
+    try {
+      const response = await fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        let errorText = "";
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          errorText = "Unable to read error response";
         }
-        throw new Error(`Connection error. Please check your internet connection and try again.`);
-      } else if (response.status >= 500) {
-        if (retryCount < MAX_RETRIES) {
-          console.log(`[API] Server error, retrying in ${RETRY_DELAY}ms...`);
-          await delay(RETRY_DELAY * (retryCount + 1));
-          return apiCall<T>(endpoint, options, retryCount + 1);
+        
+        console.error("[API] Error response:", response.status, errorText);
+        
+        if (response.status === 404) {
+          throw new Error(`The requested feature is not available yet. Please try again later.`);
+        } else if (response.status === 401) {
+          throw new Error(`Authentication required. Please sign in again.`);
+        } else if (response.status === 403) {
+          throw new Error(`Access denied. You don't have permission to perform this action.`);
+        } else if (response.status === 429) {
+          throw new Error(`Too many requests. Please wait a moment and try again.`);
+        } else if (response.status === 525 || response.status === 526) {
+          if (retryCount < MAX_RETRIES) {
+            const retryDelay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
+            console.log(`[API] SSL handshake error (${response.status}), retrying in ${retryDelay}ms...`);
+            await delay(retryDelay);
+            return apiCall<T>(endpoint, options, retryCount + 1);
+          }
+          throw new Error(`Connection error. Please check your internet connection and try again.`);
+        } else if (response.status >= 500) {
+          if (retryCount < MAX_RETRIES) {
+            const retryDelay = INITIAL_RETRY_DELAY * (retryCount + 1);
+            console.log(`[API] Server error, retrying in ${retryDelay}ms...`);
+            await delay(retryDelay);
+            return apiCall<T>(endpoint, options, retryCount + 1);
+          }
+          throw new Error(`Server error. Please try again later.`);
+        } else {
+          throw new Error(`Request failed: ${errorText || 'Unknown error'}`);
         }
-        throw new Error(`Server error. Please try again later.`);
-      } else {
-        throw new Error(`Request failed: ${errorText || 'Unknown error'}`);
       }
+
+      const data = await response.json();
+      console.log("[API] Success:", data);
+      return data;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      throw fetchError;
     }
-
-    const data = await response.json();
-    console.log("[API] Success:", data);
-    return data;
   } catch (error) {
     console.error("[API] Request failed:", error);
     
-    if (error instanceof TypeError && (
-      error.message.includes("Network request failed") || 
-      error.message.includes("Failed to fetch") ||
-      error.message.includes("network error")
-    )) {
+    if (error instanceof Error && error.name === 'AbortError') {
       if (retryCount < MAX_RETRIES) {
-        console.log(`[API] Network error, retrying in ${RETRY_DELAY * 2}ms...`);
-        await delay(RETRY_DELAY * 2 * (retryCount + 1));
+        const retryDelay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
+        console.log(`[API] Request timeout, retrying in ${retryDelay}ms...`);
+        await delay(retryDelay);
         return apiCall<T>(endpoint, options, retryCount + 1);
       }
-      
-      throw new Error("Unable to connect to server. Please check your internet connection and try again.");
+      throw new Error("Request timed out. Please check your internet connection and try again.");
     }
     
-    if (error instanceof Error && (
-      error.message.includes("525") || 
-      error.message.includes("526") ||
-      error.message.includes("SSL") || 
-      error.message.includes("certificate") ||
-      error.message.includes("handshake") ||
-      error.message.includes("TLS") ||
-      error.message.includes("CERT")
-    )) {
+    if (isSSLError(error)) {
       if (retryCount < MAX_RETRIES) {
-        console.log(`[API] SSL/TLS error detected, retrying in ${RETRY_DELAY * 3}ms...`);
-        await delay(RETRY_DELAY * 3 * (retryCount + 1));
+        const retryDelay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
+        console.log(`[API] SSL/TLS error detected, retrying in ${retryDelay}ms...`);
+        await delay(retryDelay);
         return apiCall<T>(endpoint, options, retryCount + 1);
       }
       
       throw new Error("Connection security error. Please restart the app and try again. If the problem persists, check your network settings.");
+    }
+    
+    if (isNetworkError(error)) {
+      if (retryCount < MAX_RETRIES) {
+        const retryDelay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
+        console.log(`[API] Network error, retrying in ${retryDelay}ms...`);
+        await delay(retryDelay);
+        return apiCall<T>(endpoint, options, retryCount + 1);
+      }
+      
+      throw new Error("Unable to connect to server. Please check your internet connection and try again.");
     }
     
     throw error;
