@@ -23,9 +23,9 @@ export const getBearerToken = async (): Promise<string | null> => {
   }
 };
 
-const MAX_RETRIES = 10;
+const MAX_RETRIES = 7;
 const INITIAL_RETRY_DELAY = 1000;
-const MAX_RETRY_DELAY = 15000;
+const MAX_RETRY_DELAY = 10000;
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -45,12 +45,7 @@ const isSSLError = (error: any): boolean => {
     errorString.includes('nsurlsession') ||
     errorString.includes('nserror') ||
     errorString.includes('cfnetwork') ||
-    errorString.includes('kcfstreamerrordomain') ||
-    errorString.includes('nsurlconnection') ||
-    errorString.includes('nsurlsessiontask') ||
-    errorString.includes('ssl_error') ||
-    errorString.includes('err_ssl') ||
-    errorString.includes('ssl_protocol_error') ||
+    errorString.includes('kCFStreamErrorDomainSSL') ||
     messageString.includes('ssl') ||
     messageString.includes('tls') ||
     messageString.includes('certificate') ||
@@ -59,13 +54,7 @@ const isSSLError = (error: any): boolean => {
     messageString.includes('secure connection') ||
     messageString.includes('nsurlsession') ||
     messageString.includes('nserror') ||
-    messageString.includes('cfnetwork') ||
-    messageString.includes('kcfstreamerrordomain') ||
-    messageString.includes('nsurlconnection') ||
-    messageString.includes('nsurlsessiontask') ||
-    messageString.includes('ssl_error') ||
-    messageString.includes('err_ssl') ||
-    messageString.includes('ssl_protocol_error')
+    messageString.includes('cfnetwork')
   );
 };
 
@@ -83,24 +72,18 @@ const isNetworkError = (error: any): boolean => {
     errorString.includes('connection') ||
     errorString.includes('timeout') ||
     errorString.includes('unreachable') ||
-    errorString.includes('econnrefused') ||
-    errorString.includes('enotfound') ||
-    errorString.includes('etimedout') ||
     messageString.includes('network request failed') ||
     messageString.includes('failed to fetch') ||
     messageString.includes('network error') ||
     messageString.includes('connection') ||
     messageString.includes('timeout') ||
-    messageString.includes('unreachable') ||
-    messageString.includes('econnrefused') ||
-    messageString.includes('enotfound') ||
-    messageString.includes('etimedout')
+    messageString.includes('unreachable')
   );
 };
 
 const calculateRetryDelay = (retryCount: number): number => {
   const exponentialDelay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
-  const jitter = Math.random() * 1000;
+  const jitter = Math.random() * 500;
   return Math.min(exponentialDelay + jitter, MAX_RETRY_DELAY);
 };
 
@@ -135,7 +118,6 @@ export const apiCall = async <T = any>(
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Connection': 'keep-alive',
-        'User-Agent': 'Calo-iOS/1.0',
       };
     }
 
@@ -147,7 +129,7 @@ export const apiCall = async <T = any>(
       };
     }
 
-    const timeoutDuration = Platform.OS === 'ios' ? 60000 : 30000;
+    const timeoutDuration = Platform.OS === 'ios' ? 45000 : 30000;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
 
@@ -183,7 +165,7 @@ export const apiCall = async <T = any>(
             return apiCall<T>(endpoint, options, retryCount + 1);
           }
           throw new Error(`Too many requests. Please wait a moment and try again.`);
-        } else if (response.status >= 520 && response.status <= 527) {
+        } else if (response.status === 525 || response.status === 526 || response.status === 520 || response.status === 521 || response.status === 522 || response.status === 523 || response.status === 524) {
           if (retryCount < MAX_RETRIES) {
             const retryDelay = calculateRetryDelay(retryCount);
             console.log(`[API] Cloudflare/SSL error (${response.status}), retrying in ${retryDelay}ms...`);
