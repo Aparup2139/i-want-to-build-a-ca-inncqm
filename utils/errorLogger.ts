@@ -1,4 +1,3 @@
-
 // Global error logging for runtime errors
 // Captures console.log/warn/error and sends to Natively server for AI debugging
 
@@ -18,12 +17,6 @@ const clearLogAfterDelay = (logKey: string) => {
 const MUTED_MESSAGES = [
   'each child in a list should have a unique "key" prop',
   'Each child in a list should have a unique "key" prop',
-  'java.io.IOException',
-  'Failed to download remote update',
-  'IOException',
-  'Uncaught Error: java.io.IOException',
-  '[Theme] Error loading theme',
-  'Error loading theme, using default',
 ];
 
 // Check if a message should be muted
@@ -300,44 +293,42 @@ export const setupErrorLogging = () => {
 
   // Override console.log to capture and send to server
   console.log = (...args: any[]) => {
-    // Queue log for sending to server (skip muted messages)
-    const message = stringifyArgs(args);
-    if (!shouldMuteMessage(message)) {
-      const source = getCallerInfo();
-      queueLog('log', message, source);
-    }
-
-    // Always call original
+    // Always call original first
     originalConsoleLog.apply(console, args);
+
+    // Queue log for sending to server
+    const message = stringifyArgs(args);
+    const source = getCallerInfo();
+    queueLog('log', message, source);
   };
 
   // Override console.warn to capture and send to server
   console.warn = (...args: any[]) => {
+    // Always call original first
+    originalConsoleWarn.apply(console, args);
+
     // Queue log for sending to server (skip muted messages)
     const message = stringifyArgs(args);
-    if (!shouldMuteMessage(message)) {
-      const source = getCallerInfo();
-      queueLog('warn', message, source);
-    }
+    if (shouldMuteMessage(message)) return;
 
-    // Always call original
-    originalConsoleWarn.apply(console, args);
+    const source = getCallerInfo();
+    queueLog('warn', message, source);
   };
 
   // Override console.error to capture and send to server
   console.error = (...args: any[]) => {
     // Queue log for sending to server (skip muted messages)
     const message = stringifyArgs(args);
-    if (!shouldMuteMessage(message)) {
-      const source = getCallerInfo();
-      queueLog('error', message, source);
+    if (shouldMuteMessage(message)) return;
 
-      // Also send to parent window for web iframe mode
-      sendErrorToParent('error', 'Console Error', message);
-    }
-
-    // Always call original
+    // Always call original first
     originalConsoleError.apply(console, args);
+
+    const source = getCallerInfo();
+    queueLog('error', message, source);
+
+    // Also send to parent window for web iframe mode
+    sendErrorToParent('error', 'Console Error', message);
   };
 
   // Capture unhandled errors in web environment
@@ -347,14 +338,12 @@ export const setupErrorLogging = () => {
       const sourceFile = source ? source.split('/').pop() : 'unknown';
       const errorMessage = `RUNTIME ERROR: ${message} at ${sourceFile}:${lineno}:${colno}`;
 
-      if (!shouldMuteMessage(errorMessage)) {
-        queueLog('error', errorMessage, `${sourceFile}:${lineno}:${colno}`);
-        sendErrorToParent('error', 'JavaScript Runtime Error', {
-          message,
-          source: `${sourceFile}:${lineno}:${colno}`,
-          error: error?.stack || error,
-        });
-      }
+      queueLog('error', errorMessage, `${sourceFile}:${lineno}:${colno}`);
+      sendErrorToParent('error', 'JavaScript Runtime Error', {
+        message,
+        source: `${sourceFile}:${lineno}:${colno}`,
+        error: error?.stack || error,
+      });
 
       return false; // Don't prevent default error handling
     };
@@ -363,10 +352,8 @@ export const setupErrorLogging = () => {
     if (Platform.OS === 'web') {
       window.addEventListener('unhandledrejection', (event) => {
         const message = `UNHANDLED PROMISE REJECTION: ${event.reason}`;
-        if (!shouldMuteMessage(message)) {
-          queueLog('error', message, '');
-          sendErrorToParent('error', 'Unhandled Promise Rejection', { reason: event.reason });
-        }
+        queueLog('error', message, '');
+        sendErrorToParent('error', 'Unhandled Promise Rejection', { reason: event.reason });
       });
     }
   }

@@ -1,25 +1,8 @@
 
 import { StyleSheet } from 'react-native';
 
-export interface ThemeColors {
-  background: string;
-  card: string;
-  text: string;
-  textSecondary: string;
-  primary: string;
-  secondary: string;
-  accent: string;
-  highlight: string;
-  border: string;
-  error: string;
-  success: string;
-  protein: string;
-  carbs: string;
-  fat: string;
-}
-
 // Light theme colors
-export const lightColors: ThemeColors = {
+export const lightColors = {
   background: '#F8FAF9',
   card: '#FFFFFF',
   text: '#1A1A1A',
@@ -37,7 +20,7 @@ export const lightColors: ThemeColors = {
 };
 
 // Dark theme colors - Dark purple/navy with golden accents (like Cal AI)
-export const darkColors: ThemeColors = {
+export const darkColors = {
   background: '#1A1625', // Dark purple/navy background
   card: '#252033', // Slightly lighter purple for cards
   text: '#FFFFFF', // White text for primary content

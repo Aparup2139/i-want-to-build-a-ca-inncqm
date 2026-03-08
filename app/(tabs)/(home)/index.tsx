@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -375,7 +374,7 @@ export default function HomeScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
-
+  
   // Form state
   const [foodName, setFoodName] = useState('');
   const [calories, setCalories] = useState('');
@@ -408,10 +407,10 @@ export default function HomeScreen() {
       console.log('[API] Today stats:', todayStats);
       console.log('[API] User profile:', userProfile);
 
-      setEntries(todayEntries || []);
-      setStats(todayStats || { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0, entryCount: 0 });
-      setProfile(userProfile || null);
-
+      setEntries(todayEntries);
+      setStats(todayStats);
+      setProfile(userProfile);
+      
       console.log('[API] Data loaded successfully');
     } catch (error) {
       console.error('[API] Error loading data:', error);
@@ -426,18 +425,11 @@ export default function HomeScreen() {
     if (!authLoading && !user) {
       console.log('User not authenticated, redirecting to auth');
       router.replace('/auth');
+    } else if (user) {
+      console.log('User authenticated, loading data');
+      loadData();
     }
-  }, [user, authLoading, router]);
-
-  // Reload data every time the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      if (user && !authLoading) {
-        console.log('Home screen focused, reloading data');
-        loadData();
-      }
-    }, [user, authLoading, loadData])
-  );
+  }, [user, authLoading, router, loadData]);
 
   const handleAddEntry = async () => {
     if (!foodName.trim() || !calories.trim()) {
@@ -447,7 +439,7 @@ export default function HomeScreen() {
 
     console.log('[API] Adding food entry:', { foodName, calories, protein, carbs, fat, mealType });
     setSubmitting(true);
-
+    
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -463,17 +455,15 @@ export default function HomeScreen() {
       const newEntry = await authenticatedPost<FoodEntry>('/api/food-entries', payload);
       console.log('[API] Food entry created:', newEntry);
 
-      if (newEntry) {
-        setEntries([newEntry, ...entries]);
-        setStats({
-          totalCalories: stats.totalCalories + newEntry.calories,
-          totalProtein: stats.totalProtein + (newEntry.protein || 0),
-          totalCarbs: stats.totalCarbs + (newEntry.carbs || 0),
-          totalFat: stats.totalFat + (newEntry.fat || 0),
-          entryCount: stats.entryCount + 1,
-        });
-      }
-
+      setEntries([newEntry, ...entries]);
+      setStats({
+        totalCalories: stats.totalCalories + newEntry.calories,
+        totalProtein: stats.totalProtein + (newEntry.protein || 0),
+        totalCarbs: stats.totalCarbs + (newEntry.carbs || 0),
+        totalFat: stats.totalFat + (newEntry.fat || 0),
+        entryCount: stats.entryCount + 1,
+      });
+      
       // Reset form
       setFoodName('');
       setCalories('');
@@ -482,7 +472,7 @@ export default function HomeScreen() {
       setFat('');
       setMealType('');
       setShowAddModal(false);
-
+      
       console.log('[API] Food entry added successfully');
     } catch (error) {
       console.error('[API] Error adding entry:', error);
@@ -500,9 +490,9 @@ export default function HomeScreen() {
 
   const handleDelete = async () => {
     if (!deleteEntryId) return;
-
+    
     console.log('[API] Deleting food entry:', deleteEntryId);
-
+    
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -520,7 +510,7 @@ export default function HomeScreen() {
           entryCount: stats.entryCount - 1,
         });
       }
-
+      
       setShowDeleteModal(false);
       setDeleteEntryId(null);
     } catch (error) {
@@ -574,7 +564,7 @@ export default function HomeScreen() {
     { key: 'snack', label: 'Snack', icon: 'fastfood' },
     { key: 'dinner', label: 'Dinner', icon: 'dinner-dining' },
     { key: 'other', label: 'Other', icon: 'restaurant' },
-  ] as const;
+  ];
 
   const proteinValue = `${stats.totalProtein.toFixed(1)}g`;
   const carbsValue = `${stats.totalCarbs.toFixed(1)}g`;
@@ -587,7 +577,7 @@ export default function HomeScreen() {
           headerShown: false,
         }}
       />
-
+      
       <View style={dynamicStyles.header}>
         <Text style={dynamicStyles.headerTitle}>Calo</Text>
         <Text style={dynamicStyles.headerSubtitle}>Track your nutrition</Text>
@@ -600,7 +590,7 @@ export default function HomeScreen() {
             <Text style={dynamicStyles.statsTitle}>Today</Text>
             <Text style={dynamicStyles.statsDate}>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
           </View>
-
+          
           <View style={dynamicStyles.calorieCircle}>
             <Text style={dynamicStyles.calorieNumber}>{stats.totalCalories}</Text>
             <Text style={dynamicStyles.calorieLabel}>calories</Text>
@@ -631,7 +621,7 @@ export default function HomeScreen() {
         {/* Entries List by Meal Type */}
         <View style={dynamicStyles.entriesSection}>
           <Text style={dynamicStyles.sectionTitle}>Today&apos;s Meals</Text>
-
+          
           {entries.length === 0 ? (
             <View style={dynamicStyles.emptyState}>
               <IconSymbol
@@ -665,13 +655,13 @@ export default function HomeScreen() {
                     const entryProtein = entry.protein ? `${entry.protein}g` : '0g';
                     const entryCarbs = entry.carbs ? `${entry.carbs}g` : '0g';
                     const entryFat = entry.fat ? `${entry.fat}g` : '0g';
-
+                    
                     return (
                       <View key={entry.id} style={dynamicStyles.entryCard}>
                         {entry.imageUrl && (
                           <Image source={{ uri: entry.imageUrl }} style={dynamicStyles.entryImage} />
                         )}
-
+                        
                         <View style={dynamicStyles.entryHeader}>
                           <View style={dynamicStyles.entryInfo}>
                             <View style={dynamicStyles.entryNameRow}>
@@ -701,7 +691,7 @@ export default function HomeScreen() {
                             />
                           </TouchableOpacity>
                         </View>
-
+                        
                         <View style={dynamicStyles.entryStats}>
                           <View style={dynamicStyles.entryStat}>
                             <Text style={dynamicStyles.entryStatValue}>{entryCalories}</Text>
@@ -763,7 +753,7 @@ export default function HomeScreen() {
           <View style={dynamicStyles.confirmModal}>
             <Text style={dynamicStyles.confirmTitle}>Delete Entry?</Text>
             <Text style={dynamicStyles.confirmMessage}>Are you sure you want to delete this food entry?</Text>
-
+            
             <View style={dynamicStyles.confirmButtons}>
               <TouchableOpacity
                 style={dynamicStyles.confirmButtonCancel}
@@ -774,7 +764,7 @@ export default function HomeScreen() {
               >
                 <Text style={dynamicStyles.confirmButtonCancelText}>Cancel</Text>
               </TouchableOpacity>
-
+              
               <TouchableOpacity
                 style={dynamicStyles.confirmButtonDelete}
                 onPress={handleDelete}

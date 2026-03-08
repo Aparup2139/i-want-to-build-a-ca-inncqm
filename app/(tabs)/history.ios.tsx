@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -92,18 +91,11 @@ export default function HistoryScreen() {
         authenticatedGet<{ is_pro: boolean }>('/api/user/profile'),
         authenticatedGet<ProgressData>('/api/food-entries/progress'),
       ]);
-
-      if (!historyData && !profileData && !progressResponse) {
-        // Not authenticated, skip silently
-        console.log('[API] Not authenticated, skipping history load');
-        return;
-      }
-
       console.log('[API] History loaded:', historyData);
       console.log('[API] Profile loaded:', profileData);
       console.log('[API] Progress data loaded:', progressResponse);
-      setHistory(historyData || []);
-      setIsPro(profileData?.is_pro ?? false);
+      setHistory(historyData);
+      setIsPro(profileData.is_pro);
       setProgressData(progressResponse);
     } catch (error: any) {
       console.error('[API] Error loading history:', error);
@@ -113,12 +105,9 @@ export default function HistoryScreen() {
     }
   }, []);
 
-  // Reload data every time the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadHistory();
-    }, [loadHistory])
-  );
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   const toggleDate = (date: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
