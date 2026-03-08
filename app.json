@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "i-want-to-build-a-ca",
@@ -30,7 +31,8 @@
               "NSExceptionMinimumTLSVersion": "TLSv1.0",
               "NSThirdPartyExceptionAllowsInsecureHTTPLoads": true,
               "NSThirdPartyExceptionRequiresForwardSecrecy": false,
-              "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0"
+              "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0",
+              "NSRequiresCertificateTransparency": false
             },
             "app.specular.dev": {
               "NSExceptionAllowsInsecureHTTPLoads": true,
@@ -39,7 +41,18 @@
               "NSExceptionMinimumTLSVersion": "TLSv1.0",
               "NSThirdPartyExceptionAllowsInsecureHTTPLoads": true,
               "NSThirdPartyExceptionRequiresForwardSecrecy": false,
-              "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0"
+              "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0",
+              "NSRequiresCertificateTransparency": false
+            },
+            "8sy935d3kbfkkm35z7tbk22nep8qpb9m.app.specular.dev": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.0",
+              "NSThirdPartyExceptionAllowsInsecureHTTPLoads": true,
+              "NSThirdPartyExceptionRequiresForwardSecrecy": false,
+              "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0",
+              "NSRequiresCertificateTransparency": false
             },
             "cloudflare.com": {
               "NSExceptionAllowsInsecureHTTPLoads": true,
@@ -48,7 +61,8 @@
               "NSExceptionMinimumTLSVersion": "TLSv1.0",
               "NSThirdPartyExceptionAllowsInsecureHTTPLoads": true,
               "NSThirdPartyExceptionRequiresForwardSecrecy": false,
-              "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0"
+              "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0",
+              "NSRequiresCertificateTransparency": false
             },
             "cloudflaressl.com": {
               "NSExceptionAllowsInsecureHTTPLoads": true,
@@ -57,12 +71,14 @@
               "NSExceptionMinimumTLSVersion": "TLSv1.0",
               "NSThirdPartyExceptionAllowsInsecureHTTPLoads": true,
               "NSThirdPartyExceptionRequiresForwardSecrecy": false,
-              "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0"
+              "NSThirdPartyExceptionMinimumTLSVersion": "TLSv1.0",
+              "NSRequiresCertificateTransparency": false
             },
             "localhost": {
               "NSExceptionAllowsInsecureHTTPLoads": true,
               "NSIncludesSubdomains": true,
-              "NSThirdPartyExceptionAllowsInsecureHTTPLoads": true
+              "NSThirdPartyExceptionAllowsInsecureHTTPLoads": true,
+              "NSRequiresCertificateTransparency": false
             }
           }
         },
