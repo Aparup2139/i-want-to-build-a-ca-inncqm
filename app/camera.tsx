@@ -29,19 +29,6 @@ interface AnalysisResult {
   fat: number;
   imageUrl: string;
   confidence: string;
-  databaseSuggestions?: DatabaseFood[];
-}
-
-interface DatabaseFood {
-  id: string;
-  name: string;
-  category: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  servingSize: number;
-  servingUnit?: string;
 }
 
 type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner';
@@ -62,33 +49,15 @@ export default function CameraScreen() {
     title: '',
     message: '',
   });
-  const [showManualSearch, setShowManualSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<DatabaseFood[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [selectedDatabaseFood, setSelectedDatabaseFood] = useState<DatabaseFood | null>(null);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [manualFoodName, setManualFoodName] = useState('');
+  const [lookingUpNutrition, setLookingUpNutrition] = useState(false);
 
   const showError = (title: string, message: string) => {
     setErrorModal({ visible: true, title, message });
   };
 
-  // Debounce search to avoid too many API calls
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const debouncedSearch = useCallback((query: string) => {
-    if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current);
-    }
-    if (!query.trim()) {
-      setSearchResults([]);
-      setSearching(false);
-      return;
-    }
-    setSearching(true);
-    searchDebounceRef.current = setTimeout(() => {
-      searchFoodDatabase(query);
-    }, 400);
-  }, []);
 
   const checkUsageLimit = async () => {
     try {
@@ -219,95 +188,102 @@ export default function CameraScreen() {
       const hasValidNutrition = result.calories > 0 || result.protein > 0 || result.carbs > 0 || result.fat > 0;
       
       if (!hasValidNutrition) {
-        console.warn('[API] Analysis returned zero nutritional values - prompting user to search database');
+        console.warn('[API] Analysis returned zero nutritional values - prompting user to type food name');
         showError(
           'Incomplete Analysis',
-          'The AI could not determine the nutritional values. Please search our food database to find the correct item.'
+          'The AI could not determine the nutritional values. Please type the food name to get accurate nutrition information.'
         );
-        // Still show the result modal so user can search
+        // Still show the result modal so user can type food name
         setAnalysisResult(result);
         setShowResultModal(true);
-        setShowManualSearch(true); // Auto-open search modal
+        setShowManualInput(true); // Auto-open manual input modal
       } else {
         await incrementUsage();
         setAnalysisResult(result);
         setShowResultModal(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
-        // If confidence is low but we have database suggestions, show a hint
-        if (result.confidence === 'low' && result.databaseSuggestions && result.databaseSuggestions.length > 0) {
-          console.log('[API] Low confidence - database suggestions available for user to pick from');
+        // If confidence is low, suggest user to type food name for better accuracy
+        if (result.confidence === 'low') {
+          console.log('[API] Low confidence - user can type food name for better accuracy');
         }
       }
     } catch (error: any) {
       console.error('[API] Error analyzing image:', error);
-      showError('Analysis Failed', error.message || 'Failed to analyze the food image. Please try searching our food database instead.');
-      // Open manual search as fallback
-      setShowManualSearch(true);
+      // Set a placeholder result so the manual input can still save an entry
+      setAnalysisResult({
+        foodName: '',
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        imageUrl: '',
+        confidence: 'low',
+      });
+      showError('Analysis Failed', error.message || 'Failed to analyze the food image. Please type the food name to get nutritional information.');
+      // Open manual input as fallback
+      setShowManualInput(true);
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const searchFoodDatabase = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      setSearching(false);
+  const lookupNutritionByName = async () => {
+    if (!manualFoodName.trim()) {
+      showError('Food Name Required', 'Please enter a food name to look up nutritional information.');
       return;
     }
 
-    console.log('[API] Searching food database:', query);
+    console.log('[API] Looking up nutrition for:', manualFoodName);
+    setLookingUpNutrition(true);
 
     try {
-      const results = await authenticatedPost<DatabaseFood[]>('/api/food/search', {
-        query: query.trim(),
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      console.log('[API] Requesting POST /api/food/lookup-nutrition with foodName:', manualFoodName.trim());
+      const result = await authenticatedPost<{
+        foodName: string;
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+        confidence: string;
+      }>('/api/food/lookup-nutrition', {
+        foodName: manualFoodName.trim(),
       });
 
-      console.log('[API] Search results count:', results.length, 'for query:', query);
-      setSearchResults(results);
-    } catch (error: any) {
-      console.error('[API] Error searching food database:', error);
-      // Don't show error modal for search - just show empty state
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
-    }
-  };
+      console.log('[API] LLM nutrition lookup result:', result);
+      console.log('[API] Nutritional data - Calories:', result.calories, 'Protein:', result.protein, 'Carbs:', result.carbs, 'Fat:', result.fat);
 
-  const selectDatabaseFood = (food: DatabaseFood) => {
-    console.log('User selected database food:', food.name);
-    console.log('Database food nutritional data - Calories:', food.calories, 'Protein:', food.protein, 'Carbs:', food.carbs, 'Fat:', food.fat);
-    console.log('Database food serving info - Size:', food.servingSize, 'Unit:', (food as any).servingUnit);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    setSelectedDatabaseFood(food);
-    setShowManualSearch(false);
-    
-    // Update analysis result with database food data
-    // The API returns calories/protein/carbs/fat already calculated for the serving size
-    // Backend now guarantees these values are non-zero for database items
-    const currentResult = analysisResult || {
-      foodName: '',
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      imageUrl: '',
-      confidence: 'high' as const,
-    };
-    setAnalysisResult({
-      ...currentResult,
-      foodName: food.name,
-      calories: Math.round(food.calories),
-      protein: Math.round(food.protein),
-      carbs: Math.round(food.carbs),
-      fat: Math.round(food.fat),
-      confidence: 'high',
-    });
-    
-    // Show result modal if it's not already visible (manual search without prior scan)
-    if (!showResultModal) {
+      // Update analysis result with LLM data
+      const currentResult = analysisResult || {
+        foodName: '',
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        imageUrl: selectedImage || '',
+        confidence: 'high' as const,
+      };
+
+      setAnalysisResult({
+        ...currentResult,
+        foodName: result.foodName,
+        calories: Math.round(result.calories),
+        protein: Math.round(result.protein),
+        carbs: Math.round(result.carbs),
+        fat: Math.round(result.fat),
+        confidence: result.confidence as 'high' | 'medium' | 'low',
+      });
+
+      setShowManualInput(false);
       setShowResultModal(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error: any) {
+      console.error('[API] Error looking up nutrition:', error);
+      showError('Lookup Failed', error.message || 'Failed to look up nutritional information. Please try again.');
+    } finally {
+      setLookingUpNutrition(false);
     }
   };
 
@@ -320,9 +296,9 @@ export default function CameraScreen() {
     if (!hasValidNutrition) {
       showError(
         'Invalid Nutritional Data',
-        'Cannot save entry with zero nutritional values. Please search our food database to find the correct item.'
+        'Cannot save entry with zero nutritional values. Please type the food name to get accurate nutritional information.'
       );
-      setShowManualSearch(true);
+      setShowManualInput(true);
       return;
     }
 
@@ -338,25 +314,27 @@ export default function CameraScreen() {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      const hasImage = !!analysisResult.imageUrl && analysisResult.imageUrl.length > 0;
+      // Check if we have a real image URL (from AI analysis) vs a local URI or empty
+      // Local URIs (file://) are not valid for the from-image endpoint which expects a hosted URL
+      const imageUrl = analysisResult.imageUrl || '';
+      const hasHostedImage = imageUrl.length > 0 && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
 
-      if (hasImage) {
-        // Use the from-image endpoint when we have an image URL
+      if (hasHostedImage) {
+        // Use the from-image endpoint when we have a hosted image URL from AI analysis
         const payload = {
           foodName: analysisResult.foodName,
           calories: analysisResult.calories,
           protein: analysisResult.protein,
           carbs: analysisResult.carbs,
           fat: analysisResult.fat,
-          imageUrl: analysisResult.imageUrl,
+          imageUrl: imageUrl,
           mealType: mealType,
-          databaseFoodId: selectedDatabaseFood?.id,
         };
 
         console.log('[API] Saving from-image payload:', payload);
         await authenticatedPost('/api/food-entries/from-image', payload);
       } else {
-        // Use the regular food-entries endpoint for manual database search entries
+        // Use the regular food-entries endpoint for LLM lookup results (no hosted image)
         const payload: any = {
           foodName: analysisResult.foodName,
           calories: analysisResult.calories,
@@ -366,7 +344,7 @@ export default function CameraScreen() {
           mealType: mealType,
         };
 
-        console.log('[API] Saving manual entry payload:', payload);
+        console.log('[API] Saving LLM lookup entry payload:', payload);
         await authenticatedPost('/api/food-entries', payload);
       }
 
@@ -386,9 +364,10 @@ export default function CameraScreen() {
       ) {
         showError(
           'Incomplete Nutritional Data',
-          'The nutritional values appear to be incomplete. Please search our food database to find the correct item with accurate nutrition info.'
+          'The nutritional values appear to be incomplete. Please type the food name to get accurate nutrition information.'
         );
-        setShowManualSearch(true);
+        setShowResultModal(false);
+        setShowManualInput(true);
       } else {
         showError('Save Failed', errorMessage || 'Failed to save food entry. Please try again.');
       }
@@ -404,18 +383,15 @@ export default function CameraScreen() {
     setAnalysisResult(null);
     setShowResultModal(false);
     setMealType('breakfast');
-    setShowManualSearch(false);
-    setSearchQuery('');
-    setSearchResults([]);
-    setSelectedDatabaseFood(null);
+    setShowManualInput(false);
+    setManualFoodName('');
   };
 
-  const openManualSearch = () => {
-    console.log('User opened manual food search');
+  const openManualInput = () => {
+    console.log('User opened manual food name input');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSearchQuery('');
-    setSearchResults([]);
-    setShowManualSearch(true);
+    setManualFoodName('');
+    setShowManualInput(true);
   };
 
   const confidenceColor = analysisResult?.confidence === 'high' 
@@ -497,16 +473,6 @@ export default function CameraScreen() {
                 color={colors.primary}
               />
               <Text style={dynamicStyles.secondaryButtonText}>Choose from Gallery</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={dynamicStyles.searchDatabaseButton} onPress={openManualSearch}>
-              <IconSymbol
-                ios_icon_name="magnifyingglass"
-                android_material_icon_name="search"
-                size={24}
-                color={colors.textSecondary}
-              />
-              <Text style={dynamicStyles.searchDatabaseButtonText}>Search Food Database</Text>
             </TouchableOpacity>
           </View>
 
@@ -596,7 +562,7 @@ export default function CameraScreen() {
                         color={colors.error}
                       />
                       <Text style={dynamicStyles.warningText}>
-                        No nutritional data available. Please search our database to find the correct food item.
+                        No nutritional data available. Please type the food name to get accurate information.
                       </Text>
                     </View>
                   )}
@@ -611,8 +577,8 @@ export default function CameraScreen() {
                       />
                       <Text style={dynamicStyles.warningText}>
                         {!hasValidNutrition 
-                          ? 'Please search our database for accurate nutritional information.'
-                          : 'Low confidence detection. You can search our database for the correct food item.'}
+                          ? 'Please type the food name for accurate nutritional information.'
+                          : 'Low confidence detection. You can type the food name for better accuracy.'}
                       </Text>
                     </View>
                   )}
@@ -625,51 +591,20 @@ export default function CameraScreen() {
                       </View>
                       <TouchableOpacity
                         style={dynamicStyles.searchButton}
-                        onPress={openManualSearch}
+                        onPress={openManualInput}
                       >
                         <IconSymbol
-                          ios_icon_name="magnifyingglass"
-                          android_material_icon_name="search"
+                          ios_icon_name="pencil"
+                          android_material_icon_name="edit"
                           size={20}
                           color={colors.primary}
                         />
-                        <Text style={dynamicStyles.searchButtonText}>Search</Text>
+                        <Text style={dynamicStyles.searchButtonText}>Type Name</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
 
-                  {analysisResult.databaseSuggestions && analysisResult.databaseSuggestions.length > 0 && (
-                    <View style={dynamicStyles.suggestionsCard}>
-                      <Text style={dynamicStyles.suggestionsTitle}>Database Suggestions:</Text>
-                      {analysisResult.databaseSuggestions.slice(0, 3).map((suggestion) => (
-                        <TouchableOpacity
-                          key={suggestion.id}
-                          style={dynamicStyles.suggestionItem}
-                          onPress={() => selectDatabaseFood({
-                            id: suggestion.id,
-                            name: suggestion.name,
-                            category: (suggestion as any).category || 'other',
-                            calories: suggestion.calories,
-                            protein: suggestion.protein,
-                            carbs: suggestion.carbs,
-                            fat: suggestion.fat,
-                            servingSize: (suggestion as any).servingSize || 100,
-                            servingUnit: (suggestion as any).servingUnit || 'g',
-                          })}
-                        >
-                          <View style={{ flex: 1 }}>
-                            <Text style={dynamicStyles.suggestionName}>{suggestion.name}</Text>
-                            <View style={{ flexDirection: 'row', gap: 8, marginTop: 2 }}>
-                              <Text style={dynamicStyles.suggestionCategory}>
-                                P: {Math.round(suggestion.protein)}g · C: {Math.round(suggestion.carbs)}g · F: {Math.round(suggestion.fat)}g
-                              </Text>
-                            </View>
-                          </View>
-                          <Text style={dynamicStyles.suggestionCalories}>{Math.round(suggestion.calories)} cal</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
+
 
                   <View style={dynamicStyles.nutritionGrid}>
                     <View style={dynamicStyles.nutritionItem}>
@@ -752,7 +687,7 @@ export default function CameraScreen() {
                         <ActivityIndicator color="#FFFFFF" />
                       ) : (
                         <Text style={dynamicStyles.saveButtonText}>
-                          {hasValidNutrition ? 'Save Entry' : 'Search Database First'}
+                          {hasValidNutrition ? 'Save Entry' : 'Type Food Name First'}
                         </Text>
                       )}
                     </TouchableOpacity>
@@ -764,18 +699,18 @@ export default function CameraScreen() {
         </View>
       </Modal>
 
-      {/* Manual Search Modal */}
+      {/* Manual Food Name Input Modal */}
       <Modal
-        visible={showManualSearch}
+        visible={showManualInput}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowManualSearch(false)}
+        onRequestClose={() => setShowManualInput(false)}
       >
         <View style={dynamicStyles.modalOverlay}>
-          <View style={dynamicStyles.searchModalContent}>
+          <View style={dynamicStyles.manualInputModalContent}>
             <View style={dynamicStyles.modalHeader}>
-              <Text style={dynamicStyles.modalTitle}>Search Food Database</Text>
-              <TouchableOpacity onPress={() => setShowManualSearch(false)}>
+              <Text style={dynamicStyles.modalTitle}>Type Food Name</Text>
+              <TouchableOpacity onPress={() => setShowManualInput(false)}>
                 <IconSymbol
                   ios_icon_name="xmark"
                   android_material_icon_name="close"
@@ -785,84 +720,68 @@ export default function CameraScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={dynamicStyles.searchInputContainer}>
+            <View style={dynamicStyles.manualInputDescription}>
               <IconSymbol
-                ios_icon_name="magnifyingglass"
-                android_material_icon_name="search"
+                ios_icon_name="info.circle"
+                android_material_icon_name="info"
                 size={20}
-                color={colors.textSecondary}
+                color={colors.primary}
               />
-              <TextInput
-                style={dynamicStyles.searchInput}
-                placeholder="Search for food (e.g., vanilla ice cream, chow mein, apple)"
-                placeholderTextColor={colors.textSecondary}
-                value={searchQuery}
-                onChangeText={(text) => {
-                  setSearchQuery(text);
-                  debouncedSearch(text);
-                }}
-                autoFocus
-              />
-              {searching && <ActivityIndicator size="small" color={colors.primary} />}
+              <Text style={dynamicStyles.manualInputDescriptionText}>
+                Type the name of the food item and our AI will find the nutritional values for you.
+              </Text>
             </View>
 
-            <ScrollView style={dynamicStyles.searchResultsContainer} showsVerticalScrollIndicator={false}>
-              {searchResults.length === 0 && searchQuery.trim() !== '' && !searching && (
-                <View style={dynamicStyles.emptySearchState}>
-                  <IconSymbol
-                    ios_icon_name="magnifyingglass"
-                    android_material_icon_name="search"
-                    size={48}
-                    color={colors.textSecondary}
-                  />
-                  <Text style={dynamicStyles.emptySearchText}>No results found</Text>
-                  <Text style={dynamicStyles.emptySearchSubtext}>
-                    Try: vanilla ice cream, chow mein, fried rice, gulab jamun, apple, scrambled eggs
-                  </Text>
-                </View>
-              )}
-              {searchResults.length === 0 && searchQuery.trim() === '' && !searching && (
-                <View style={dynamicStyles.emptySearchState}>
-                  <IconSymbol
-                    ios_icon_name="fork.knife"
-                    android_material_icon_name="restaurant"
-                    size={48}
-                    color={colors.textSecondary}
-                  />
-                  <Text style={dynamicStyles.emptySearchText}>Search our food database</Text>
-                  <Text style={dynamicStyles.emptySearchSubtext}>
-                    Chinese dishes, Indian sweets, fruits, eggs, beverages and more
-                  </Text>
-                </View>
-              )}
+            <View style={dynamicStyles.manualInputContainer}>
+              <TextInput
+                style={dynamicStyles.manualInput}
+                placeholder="e.g., vanilla ice cream, chicken biryani, apple"
+                placeholderTextColor={colors.textSecondary}
+                value={manualFoodName}
+                onChangeText={setManualFoodName}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={lookupNutritionByName}
+              />
+            </View>
 
-              {searchResults.map((food) => (
-                <TouchableOpacity
-                  key={food.id}
-                  style={dynamicStyles.searchResultItem}
-                  onPress={() => selectDatabaseFood(food)}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={dynamicStyles.searchResultName}>{food.name}</Text>
-                    <Text style={dynamicStyles.searchResultCategory}>{food.category?.replace('_', ' ')}</Text>
-                    <View style={dynamicStyles.searchResultMacros}>
-                      <Text style={dynamicStyles.searchResultMacroText}>P: {Math.round(food.protein)}g</Text>
-                      <Text style={dynamicStyles.searchResultMacroText}>C: {Math.round(food.carbs)}g</Text>
-                      <Text style={dynamicStyles.searchResultMacroText}>F: {Math.round(food.fat)}g</Text>
-                    </View>
-                    {food.servingSize && (
-                      <Text style={dynamicStyles.searchResultServingText}>
-                        per {food.servingSize}{food.servingUnit || 'g'} serving
-                      </Text>
-                    )}
-                  </View>
-                  <View style={dynamicStyles.searchResultCaloriesContainer}>
-                    <Text style={dynamicStyles.searchResultCalories}>{Math.round(food.calories)}</Text>
-                    <Text style={dynamicStyles.searchResultCaloriesLabel}>cal</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <TouchableOpacity
+              style={[
+                dynamicStyles.lookupButton,
+                (!manualFoodName.trim() || lookingUpNutrition) && dynamicStyles.lookupButtonDisabled
+              ]}
+              onPress={lookupNutritionByName}
+              disabled={!manualFoodName.trim() || lookingUpNutrition}
+            >
+              {lookingUpNutrition ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <IconSymbol
+                    ios_icon_name="sparkles"
+                    android_material_icon_name="auto-awesome"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                  <Text style={dynamicStyles.lookupButtonText}>Get Nutrition Info</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <View style={dynamicStyles.examplesContainer}>
+              <Text style={dynamicStyles.examplesTitle}>Examples:</Text>
+              <View style={dynamicStyles.exampleTags}>
+                {['Vanilla Ice Cream', 'Chicken Biryani', 'Apple', 'Scrambled Eggs'].map((example) => (
+                  <TouchableOpacity
+                    key={example}
+                    style={dynamicStyles.exampleTag}
+                    onPress={() => setManualFoodName(example)}
+                  >
+                    <Text style={dynamicStyles.exampleTagText}>{example}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           </View>
         </View>
       </Modal>
@@ -983,22 +902,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  searchDatabaseButton: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  searchDatabaseButtonText: {
-    color: colors.textSecondary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1343,104 +1247,84 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
   },
-  searchModalContent: {
+  manualInputModalContent: {
     backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    maxHeight: '90%',
-    height: '90%',
+    maxHeight: '70%',
   },
-  searchInputContainer: {
+  manualInputDescription: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 20,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.text,
-  },
-  searchResultsContainer: {
-    flex: 1,
-  },
-  emptySearchState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptySearchText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-  },
-  emptySearchSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 8,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  searchResultName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  searchResultCategory: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textTransform: 'capitalize',
-    marginBottom: 8,
-  },
-  searchResultMacros: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  searchResultMacroText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  searchResultServingText: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  searchResultCaloriesContainer: {
     alignItems: 'center',
     backgroundColor: `${colors.primary}15`,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    gap: 12,
   },
-  searchResultCalories: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.primary,
+  manualInputDescriptionText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
   },
-  searchResultCaloriesLabel: {
-    fontSize: 10,
-    color: colors.primary,
+  manualInputContainer: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    marginBottom: 20,
+  },
+  manualInput: {
+    fontSize: 16,
+    color: colors.text,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  lookupButton: {
+    flexDirection: 'row',
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 24,
+  },
+  lookupButtonDisabled: {
+    opacity: 0.6,
+  },
+  lookupButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '600',
+  },
+  examplesContainer: {
+    marginTop: 8,
+  },
+  examplesTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 12,
+  },
+  exampleTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  exampleTag: {
+    backgroundColor: colors.background,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  exampleTagText: {
+    fontSize: 13,
+    color: colors.text,
+    fontWeight: '500',
   },
 });
