@@ -13,6 +13,11 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
+    "updates": {
+      "enabled": false,
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.placeholder.app",
