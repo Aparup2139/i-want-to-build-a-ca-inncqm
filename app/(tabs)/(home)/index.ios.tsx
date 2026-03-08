@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, Redirect } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
 import { lightColors } from '@/styles/commonStyles';
@@ -382,7 +383,7 @@ export default function HomeScreen() {
   };
 
   const loadData = useCallback(async () => {
-    console.log('[API] Loading food entries, stats, and profile');
+    console.log('[Home] Loading food entries, stats, and profile');
     setLoading(true);
     try {
       const [todayEntries, todayStats, userProfile] = await Promise.all([
@@ -391,23 +392,30 @@ export default function HomeScreen() {
         authenticatedGet<UserProfile>('/api/user/profile'),
       ]);
 
-      console.log('[API] Today entries:', todayEntries);
-      console.log('[API] Today stats:', todayStats);
-      console.log('[API] User profile:', userProfile);
+      console.log('[Home] Today entries loaded:', todayEntries?.length || 0, 'entries');
+      console.log('[Home] Today stats loaded - Calories:', todayStats?.totalCalories || 0);
+      console.log('[Home] User profile loaded');
 
-      setEntries(todayEntries);
-      setStats(todayStats);
+      setEntries(todayEntries || []);
+      setStats(todayStats || {
+        totalCalories: 0,
+        totalProtein: 0,
+        totalCarbs: 0,
+        totalFat: 0,
+        entryCount: 0,
+      });
       setProfile(userProfile);
       
-      console.log('[API] Data loaded successfully');
+      console.log('[Home] Data loaded successfully');
     } catch (error) {
-      console.error('[API] Error loading data:', error);
+      console.error('[Home] Error loading data:', error);
       showError('Error', 'Failed to load data. Please try again.');
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Load data on mount
   useEffect(() => {
     console.log('HomeScreen mounted, user:', user);
     if (!authLoading && !user) {
@@ -418,6 +426,16 @@ export default function HomeScreen() {
       loadData();
     }
   }, [user, authLoading, router, loadData]);
+
+  // Reload data when screen comes into focus (e.g., after saving a food entry)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[Home] Screen focused, reloading data');
+      if (user && !authLoading) {
+        loadData();
+      }
+    }, [user, authLoading, loadData])
+  );
 
   const confirmDelete = (entryId: string) => {
     console.log('Confirming delete for entry:', entryId);
@@ -501,7 +519,7 @@ export default function HomeScreen() {
     { key: 'snack', label: 'Snack', icon: 'fastfood' },
     { key: 'dinner', label: 'Dinner', icon: 'dinner-dining' },
     { key: 'other', label: 'Other', icon: 'restaurant' },
-  ];
+  ] as const;
 
   const proteinValue = `${stats.totalProtein.toFixed(1)}g`;
   const carbsValue = `${stats.totalCarbs.toFixed(1)}g`;
