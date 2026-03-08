@@ -589,88 +589,90 @@ export default function HomeScreen() {
               <Text style={dynamicStyles.emptySubtext}>Tap the camera button to scan your first meal</Text>
             </View>
           ) : (
-            mealSections.map((section) => {
-              const sectionEntries = groupedEntries[section.key];
-              if (sectionEntries.length === 0) return null;
+            <React.Fragment>
+              {mealSections.map((section) => {
+                const sectionEntries = groupedEntries[section.key];
+                if (sectionEntries.length === 0) return null;
 
-              return (
-                <View key={section.key} style={dynamicStyles.mealSection}>
-                  <View style={dynamicStyles.mealSectionHeader}>
-                    <IconSymbol
-                      ios_icon_name={section.icon}
-                      android_material_icon_name={section.icon}
-                      size={20}
-                      color={colors.primary}
-                    />
-                    <Text style={dynamicStyles.mealSectionTitle}>{section.label}</Text>
-                  </View>
+                return (
+                  <View key={section.key} style={dynamicStyles.mealSection}>
+                    <View style={dynamicStyles.mealSectionHeader}>
+                      <IconSymbol
+                        ios_icon_name={section.icon}
+                        android_material_icon_name={section.icon}
+                        size={20}
+                        color={colors.primary}
+                      />
+                      <Text style={dynamicStyles.mealSectionTitle}>{section.label}</Text>
+                    </View>
 
-                  {sectionEntries.map((entry) => {
-                    const entryCalories = entry.calories.toString();
-                    const entryProtein = entry.protein ? `${entry.protein}g` : '0g';
-                    const entryCarbs = entry.carbs ? `${entry.carbs}g` : '0g';
-                    const entryFat = entry.fat ? `${entry.fat}g` : '0g';
-                    
-                    return (
-                      <View key={entry.id} style={dynamicStyles.entryCard}>
-                        {entry.imageUrl && (
-                          <Image source={{ uri: entry.imageUrl }} style={dynamicStyles.entryImage} />
-                        )}
-                        
-                        <View style={dynamicStyles.entryHeader}>
-                          <View style={dynamicStyles.entryInfo}>
-                            <View style={dynamicStyles.entryNameRow}>
-                              <Text style={dynamicStyles.entryName}>{entry.foodName}</Text>
-                              {entry.recognizedByAi && (
-                                <View style={dynamicStyles.aiBadge}>
-                                  <IconSymbol
-                                    ios_icon_name="sparkles"
-                                    android_material_icon_name="auto-awesome"
-                                    size={12}
-                                    color="#FFFFFF"
-                                  />
-                                  <Text style={dynamicStyles.aiBadgeText}>AI</Text>
-                                </View>
-                              )}
+                    {sectionEntries.map((entry) => {
+                      const entryCalories = entry.calories.toString();
+                      const entryProtein = entry.protein ? `${entry.protein}g` : '0g';
+                      const entryCarbs = entry.carbs ? `${entry.carbs}g` : '0g';
+                      const entryFat = entry.fat ? `${entry.fat}g` : '0g';
+                      
+                      return (
+                        <View key={entry.id} style={dynamicStyles.entryCard}>
+                          {entry.imageUrl && (
+                            <Image source={{ uri: entry.imageUrl }} style={dynamicStyles.entryImage} />
+                          )}
+                          
+                          <View style={dynamicStyles.entryHeader}>
+                            <View style={dynamicStyles.entryInfo}>
+                              <View style={dynamicStyles.entryNameRow}>
+                                <Text style={dynamicStyles.entryName}>{entry.foodName}</Text>
+                                {entry.recognizedByAi && (
+                                  <View style={dynamicStyles.aiBadge}>
+                                    <IconSymbol
+                                      ios_icon_name="sparkles"
+                                      android_material_icon_name="auto-awesome"
+                                      size={12}
+                                      color="#FFFFFF"
+                                    />
+                                    <Text style={dynamicStyles.aiBadgeText}>AI</Text>
+                                  </View>
+                                )}
+                              </View>
+                            </View>
+                            <TouchableOpacity
+                              onPress={() => confirmDelete(entry.id)}
+                              style={dynamicStyles.deleteButton}
+                            >
+                              <IconSymbol
+                                ios_icon_name="trash"
+                                android_material_icon_name="delete"
+                                size={20}
+                                color={colors.error}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                          
+                          <View style={dynamicStyles.entryStats}>
+                            <View style={dynamicStyles.entryStat}>
+                              <Text style={dynamicStyles.entryStatValue}>{entryCalories}</Text>
+                              <Text style={dynamicStyles.entryStatLabel}>cal</Text>
+                            </View>
+                            <View style={dynamicStyles.entryStat}>
+                              <Text style={[dynamicStyles.entryStatValue, dynamicStyles.macroProtein]}>{entryProtein}</Text>
+                              <Text style={dynamicStyles.entryStatLabel}>protein</Text>
+                            </View>
+                            <View style={dynamicStyles.entryStat}>
+                              <Text style={[dynamicStyles.entryStatValue, dynamicStyles.macroCarbs]}>{entryCarbs}</Text>
+                              <Text style={dynamicStyles.entryStatLabel}>carbs</Text>
+                            </View>
+                            <View style={dynamicStyles.entryStat}>
+                              <Text style={[dynamicStyles.entryStatValue, dynamicStyles.macroFat]}>{entryFat}</Text>
+                              <Text style={dynamicStyles.entryStatLabel}>fat</Text>
                             </View>
                           </View>
-                          <TouchableOpacity
-                            onPress={() => confirmDelete(entry.id)}
-                            style={dynamicStyles.deleteButton}
-                          >
-                            <IconSymbol
-                              ios_icon_name="trash"
-                              android_material_icon_name="delete"
-                              size={20}
-                              color={colors.error}
-                            />
-                          </TouchableOpacity>
                         </View>
-                        
-                        <View style={dynamicStyles.entryStats}>
-                          <View style={dynamicStyles.entryStat}>
-                            <Text style={dynamicStyles.entryStatValue}>{entryCalories}</Text>
-                            <Text style={dynamicStyles.entryStatLabel}>cal</Text>
-                          </View>
-                          <View style={dynamicStyles.entryStat}>
-                            <Text style={[dynamicStyles.entryStatValue, dynamicStyles.macroProtein]}>{entryProtein}</Text>
-                            <Text style={dynamicStyles.entryStatLabel}>protein</Text>
-                          </View>
-                          <View style={dynamicStyles.entryStat}>
-                            <Text style={[dynamicStyles.entryStatValue, dynamicStyles.macroCarbs]}>{entryCarbs}</Text>
-                            <Text style={dynamicStyles.entryStatLabel}>carbs</Text>
-                          </View>
-                          <View style={dynamicStyles.entryStat}>
-                            <Text style={[dynamicStyles.entryStatValue, dynamicStyles.macroFat]}>{entryFat}</Text>
-                            <Text style={dynamicStyles.entryStatLabel}>fat</Text>
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              );
-            })
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </React.Fragment>
           )}
         </View>
 
