@@ -298,6 +298,7 @@ export default function CameraScreen() {
         'Invalid Nutritional Data',
         'Cannot save entry with zero nutritional values. Please type the food name to get accurate nutritional information.'
       );
+      setShowResultModal(false);
       setShowManualInput(true);
       return;
     }
@@ -388,10 +389,19 @@ export default function CameraScreen() {
   };
 
   const openManualInput = () => {
-    console.log('User opened manual food name input');
+    console.log('User tapped Type Name button - opening manual input modal');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setManualFoodName('');
-    setShowManualInput(true);
+    
+    // CRITICAL FIX: Close result modal first, then open manual input modal
+    // This prevents modal stacking issues on iOS
+    setShowResultModal(false);
+    
+    // Use setTimeout to ensure the result modal closes before opening manual input
+    setTimeout(() => {
+      setManualFoodName('');
+      setShowManualInput(true);
+      console.log('Manual input modal opened');
+    }, 100);
   };
 
   const confidenceColor = analysisResult?.confidence === 'high' 
