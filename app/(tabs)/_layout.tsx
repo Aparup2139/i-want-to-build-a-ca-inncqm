@@ -12,28 +12,22 @@ export default function TabLayout() {
 
   const tabs = [
     {
-      route: '/(tabs)/(home)',
+      name: '(home)',
+      route: '/(tabs)/(home)' as const,
+      icon: 'home' as const,
       label: 'Home',
-      ios_icon_name: 'house.fill',
-      android_material_icon_name: 'home' as const,
     },
     {
-      route: '/(tabs)/history',
+      name: 'history',
+      route: '/(tabs)/history' as const,
+      icon: 'calendar-today' as const,
       label: 'History',
-      ios_icon_name: 'calendar',
-      android_material_icon_name: 'calendar-today' as const,
     },
     {
-      route: '/(tabs)/groups',
-      label: 'Groups',
-      ios_icon_name: 'person.3.fill',
-      android_material_icon_name: 'group' as const,
-    },
-    {
-      route: '/(tabs)/profile',
+      name: 'profile',
+      route: '/(tabs)/profile' as const,
+      icon: 'person' as const,
       label: 'Profile',
-      ios_icon_name: 'person.fill',
-      android_material_icon_name: 'person' as const,
     },
   ];
 
@@ -42,7 +36,7 @@ export default function TabLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(home)" />
         <Stack.Screen name="history" />
-        <Stack.Screen name="groups" />
+
         <Stack.Screen name="profile" />
       </Stack>
       <FloatingTabBar tabs={tabs} />

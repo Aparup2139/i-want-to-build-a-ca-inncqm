@@ -16,6 +16,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import * as Haptics from 'expo-haptics';
 import { authenticatedPost } from '@/utils/api';
+import Slider from '@react-native-community/slider';
 
 type Gender = 'male' | 'female' | 'other';
 type Goal = 'lose_weight' | 'maintain' | 'gain_weight' | 'build_muscle';
@@ -27,7 +28,7 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
 
   // Form data
-  const [age, setAge] = useState('');
+  const [age, setAge] = useState(25);
   const [gender, setGender] = useState<Gender | ''>('');
   const [heightCm, setHeightCm] = useState('');
   const [weightKg, setWeightKg] = useState('');
@@ -48,8 +49,8 @@ export default function OnboardingScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     if (step === 1) {
-      if (!age || parseInt(age) < 10 || parseInt(age) > 120) {
-        showError('Invalid Age', 'Please enter a valid age between 10 and 120.');
+      if (age < 13 || age > 100) {
+        showError('Invalid Age', 'Please select a valid age between 13 and 100.');
         return;
       }
       if (!gender) {
@@ -89,7 +90,7 @@ export default function OnboardingScreen() {
 
   const handleComplete = async () => {
     console.log('Completing onboarding with data:', {
-      age: parseInt(age),
+      age: age,
       gender,
       height_cm: parseFloat(heightCm),
       weight_kg: parseFloat(weightKg),
@@ -101,7 +102,7 @@ export default function OnboardingScreen() {
 
     try {
       const response = await authenticatedPost('/api/user/complete-onboarding', {
-        age: parseInt(age),
+        age: age,
         gender,
         height_cm: parseFloat(heightCm),
         weight_kg: parseFloat(weightKg),
@@ -156,15 +157,22 @@ export default function OnboardingScreen() {
             <Text style={styles.subtitle}>This helps us calculate your daily calorie needs</Text>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Age</Text>
-              <TextInput
-                style={styles.input}
-                value={age}
-                onChangeText={setAge}
-                placeholder="Enter your age"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="number-pad"
-              />
+              <Text style={styles.label}>Age: {age}</Text>
+              <View style={styles.sliderContainer}>
+                <Text style={styles.sliderMinMax}>13</Text>
+                <Slider
+                  minimumValue={13}
+                  maximumValue={100}
+                  step={1}
+                  value={age}
+                  onValueChange={(val: number) => setAge(val)}
+                  minimumTrackTintColor="#10b981"
+                  maximumTrackTintColor="#d1d5db"
+                  thumbTintColor="#10b981"
+                  style={styles.slider}
+                />
+                <Text style={styles.sliderMinMax}>100</Text>
+              </View>
             </View>
 
             <View style={styles.formGroup}>
@@ -625,5 +633,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  sliderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  slider: {
+    flex: 1,
+    height: 40,
+  },
+  sliderMinMax: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    minWidth: 28,
+    textAlign: 'center',
   },
 });

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
 import { lightColors } from '@/styles/commonStyles';
@@ -56,6 +57,28 @@ export default function CameraScreen() {
 
   const showError = (title: string, message: string) => {
     setErrorModal({ visible: true, title, message });
+  };
+
+  /**
+   * Preprocess image: center-crop and resize to 512x512 max.
+   * Optimizes payload size for the vision model while preserving detail.
+   */
+  const preprocessImage = async (uri: string): Promise<string> => {
+    try {
+      console.log('[Image] Preprocessing image for optimal AI analysis...');
+      const result = await ImageManipulator.manipulateAsync(
+        uri,
+        [
+          { resize: { width: 512, height: 512 } },
+        ],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      console.log('[Image] Preprocessed image:', result.uri, `(${result.width}x${result.height})`);
+      return result.uri;
+    } catch (error) {
+      console.warn('[Image] Preprocessing failed, using original image:', error);
+      return uri;
+    }
   };
 
 
@@ -160,32 +183,48 @@ export default function CameraScreen() {
     setAnalysisResult(null);
 
     try {
+      // Preprocess image: center-crop + resize to 512x512 for optimal AI payload
+      const processedUri = await preprocessImage(imageUri);
+
       const formData = new FormData();
 
-      const uriParts = imageUri.split('.');
+      const uriParts = processedUri.split('.');
       const fileType = uriParts[uriParts.length - 1] || 'jpg';
 
       // @ts-expect-error - FormData append accepts this format in React Native
       formData.append('image', {
-        uri: imageUri,
+        uri: processedUri,
         name: `food-photo.${fileType}`,
         type: `image/${fileType === 'jpg' ? 'jpeg' : fileType}`,
       });
 
-      console.log('[API] Sending multipart form data to backend for GPT-4 Vision analysis');
+      console.log('[API] Sending preprocessed image (512x512) to backend for GPT-4o Vision analysis');
 
       const result = await authenticatedPost<AnalysisResult>('/api/food/analyze-image', formData);
 
-      console.log('[API] GPT-4 Vision analysis result:', result);
+      console.log('[API] GPT-4o Vision analysis result:', result);
       console.log('[API] Confidence level:', result.confidence);
       console.log('[API] Nutritional data - Calories:', result.calories, 'Protein:', result.protein, 'Carbs:', result.carbs, 'Fat:', result.fat);
 
-      if (result.databaseSuggestions) {
-        console.log('[API] Database suggestions count:', result.databaseSuggestions.length);
+      // Confidence guardrail: if low confidence or food name is UNCLEAR
+      if (result.confidence === 'low' || result.foodName === 'UNCLEAR' || result.foodName === 'Unknown Food') {
+        console.warn('[API] Low confidence or unclear food - showing "Picture not clear"');
+        setAnalysisResult({
+          ...result,
+          foodName: 'Picture not clear',
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          confidence: 'low',
+        });
+        setShowResultModal(true);
+        setShowManualInput(true); // Auto-open manual input for user to type food name
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        return;
       }
 
       // Check if nutritional data is valid (not all zeros)
-      // Backend now returns fallback values (200 cal, 5g protein, 30g carbs, 8g fat) instead of zeros
       const hasValidNutrition = result.calories > 0 || result.protein > 0 || result.carbs > 0 || result.fat > 0;
 
       if (!hasValidNutrition) {
@@ -204,16 +243,16 @@ export default function CameraScreen() {
         setShowResultModal(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-        // If confidence is low, suggest user to type food name for better accuracy
-        if (result.confidence === 'low') {
-          console.log('[API] Low confidence - user can type food name for better accuracy');
+        // If confidence is medium, suggest user to type food name for better accuracy
+        if (result.confidence === 'medium') {
+          console.log('[API] Medium confidence - user can type food name for better accuracy');
         }
       }
     } catch (error: any) {
       console.error('[API] Error analyzing image:', error);
       // Set a placeholder result so the manual input can still save an entry
       setAnalysisResult({
-        foodName: '',
+        foodName: 'Picture not clear',
         calories: 0,
         protein: 0,
         carbs: 0,
@@ -418,7 +457,12 @@ export default function CameraScreen() {
     ? (analysisResult.calories > 0 || analysisResult.protein > 0 || analysisResult.carbs > 0 || analysisResult.fat > 0)
     : false;
 
-  const mealTypeOptions: { value: MealType; label: string; icon: string }[] = [
+  // Check if all nutrition values are zero (e.g., water) — suppress warnings in this case
+  const allZero = analysisResult
+    ? (analysisResult.calories === 0 && analysisResult.protein === 0 && analysisResult.carbs === 0 && analysisResult.fat === 0)
+    : false;
+
+  const mealTypeOptions: { value: MealType; label: string; icon: any }[] = [
     { value: 'breakfast', label: 'Breakfast', icon: 'wb-sunny' },
     { value: 'lunch', label: 'Lunch', icon: 'restaurant' },
     { value: 'snack', label: 'Snack', icon: 'fastfood' },
@@ -564,7 +608,7 @@ export default function CameraScreen() {
                     </View>
                   </View>
 
-                  {!hasValidNutrition && (
+                  {!hasValidNutrition && !allZero && (
                     <View style={dynamicStyles.warningBox}>
                       <IconSymbol
                         ios_icon_name="exclamationmark.triangle"
@@ -578,7 +622,7 @@ export default function CameraScreen() {
                     </View>
                   )}
 
-                  {(analysisResult.confidence === 'low' || !hasValidNutrition) && (
+                  {!allZero && (analysisResult.confidence === 'low' || !hasValidNutrition) && (
                     <View style={dynamicStyles.warningBox}>
                       <IconSymbol
                         ios_icon_name="exclamationmark.triangle"

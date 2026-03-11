@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { Stack } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -105,9 +106,11 @@ export default function HistoryScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
+  useFocusEffect(
+    useCallback(() => {
+      loadHistory();
+    }, [loadHistory])
+  );
 
   const toggleDate = (date: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -230,7 +233,7 @@ export default function HistoryScreen() {
 
         {/* Total Calories Card */}
         <View style={styles.caloriesCard}>
-          <Text style={styles.caloriesCardTitle}>Total calories</Text>
+          <Text style={styles.caloriesCardTitle}>Average Calories</Text>
           <View style={styles.caloriesValueContainer}>
             <Text style={styles.caloriesValue}>{avgCalories.toFixed(1)}</Text>
             <Text style={styles.caloriesUnit}>cals</Text>
@@ -348,14 +351,6 @@ export default function HistoryScreen() {
 
       <View style={styles.header}>
         <Text style={styles.headerTitle}>History</Text>
-        <TouchableOpacity onPress={loadHistory}>
-          <IconSymbol
-            ios_icon_name="arrow.clockwise"
-            android_material_icon_name="refresh"
-            size={24}
-            color={colors.text}
-          />
-        </TouchableOpacity>
       </View>
 
       {loading ? (

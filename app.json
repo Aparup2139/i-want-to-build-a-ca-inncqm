@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Calo by FoodPharmer",
-    "slug": "i-want-to-build-a-ca",
+    "name": "CalO by FoodPharmer",
+    "slug": "calo-by-foodpharmer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon-xjf.png",
@@ -102,6 +102,16 @@
         "ACCESS_NETWORK_STATE",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ]
     },
@@ -125,12 +135,12 @@
       "router": {},
       "backendUrl": "https://8sy935d3kbfkkm35z7tbk22nep8qpb9m.app.specular.dev",
       "eas": {
-        "projectId": "f9bb2061-b1ef-4b86-be59-c63677f9c2e9"
+        "projectId": "6dc31092-d2ba-45ad-85d4-4e5a805191ad"
       }
     },
     "owner": "sunny2139",
     "updates": {
-      "url": "https://u.expo.dev/f9bb2061-b1ef-4b86-be59-c63677f9c2e9"
+      "url": "https://u.expo.dev/6dc31092-d2ba-45ad-85d4-4e5a805191ad"
     }
   }
 }

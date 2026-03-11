@@ -56,13 +56,14 @@ export default function FloatingTabBar({
 
     tabs.forEach((tab, index) => {
       let score = 0;
+      const routeStr = typeof tab.route === 'string' ? tab.route : tab.route.pathname;
 
       // Exact route match gets highest score
-      if (pathname === tab.route) {
+      if (pathname === routeStr) {
         score = 100;
       }
       // Check if pathname starts with tab route (for nested routes)
-      else if (pathname.startsWith(tab.route as string)) {
+      else if (pathname.startsWith(routeStr)) {
         score = 80;
       }
       // Check if pathname contains the tab name
@@ -70,7 +71,7 @@ export default function FloatingTabBar({
         score = 60;
       }
       // Check for partial matches in the route
-      else if (tab.route.includes('/(tabs)/') && pathname.includes(tab.route.split('/(tabs)/')[1])) {
+      else if (routeStr.includes('/(tabs)/') && pathname.includes(routeStr.split('/(tabs)/')[1])) {
         score = 40;
       }
 
@@ -126,18 +127,18 @@ export default function FloatingTabBar({
       ...Platform.select({
         ios: {
           backgroundColor: theme.dark
-            ? 'rgba(28, 28, 30, 0.8)'
-            : 'rgba(255, 255, 255, 0.6)',
+            ? 'rgba(28, 28, 30, 0.65)'
+            : 'rgba(255, 255, 255, 0.35)',
         },
         android: {
           backgroundColor: theme.dark
-            ? 'rgba(28, 28, 30, 0.95)'
-            : 'rgba(255, 255, 255, 0.6)',
+            ? 'rgba(28, 28, 30, 0.65)'
+            : 'rgba(255, 255, 255, 0.35)',
         },
         web: {
           backgroundColor: theme.dark
-            ? 'rgba(28, 28, 30, 0.95)'
-            : 'rgba(255, 255, 255, 0.6)',
+            ? 'rgba(28, 28, 30, 0.65)'
+            : 'rgba(255, 255, 255, 0.35)',
           backdropFilter: 'blur(10px)',
         },
       }),
@@ -186,12 +187,12 @@ export default function FloatingTabBar({
                       android_material_icon_name={tab.icon}
                       ios_icon_name={tab.icon}
                       size={24}
-                      color={isActive ? theme.colors.primary : (theme.dark ? '#98989D' : '#000000')}
+                      color={isActive ? theme.colors.primary : (theme.dark ? '#E5E7EB' : '#1F2937')}
                     />
                     <Text
                       style={[
                         styles.tabLabel,
-                        { color: theme.dark ? '#98989D' : '#8E8E93' },
+                        { color: theme.dark ? '#E5E7EB' : '#374151' },
                         isActive && { color: theme.colors.primary, fontWeight: '600' },
                       ]}
                     >
