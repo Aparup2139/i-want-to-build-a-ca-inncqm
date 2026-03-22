@@ -54,6 +54,7 @@ export default function CameraScreen() {
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualFoodName, setManualFoodName] = useState('');
   const [lookingUpNutrition, setLookingUpNutrition] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const showError = (title: string, message: string) => {
     setErrorModal({ visible: true, title, message });
@@ -141,6 +142,7 @@ export default function CameraScreen() {
 
       if (!result.canceled && result.assets[0]) {
         console.log('Photo taken:', result.assets[0].uri);
+        setRetryCount(0);
         setSelectedImage(result.assets[0].uri);
         analyzeImage(result.assets[0].uri);
       }
@@ -168,6 +170,7 @@ export default function CameraScreen() {
 
       if (!result.canceled && result.assets[0]) {
         console.log('Image selected from gallery:', result.assets[0].uri);
+        setRetryCount(0);
         setSelectedImage(result.assets[0].uri);
         analyzeImage(result.assets[0].uri);
       }
@@ -208,7 +211,7 @@ export default function CameraScreen() {
 
       // Confidence guardrail: if low confidence or food name is UNCLEAR
       if (result.confidence === 'low' || result.foodName === 'UNCLEAR' || result.foodName === 'Unknown Food') {
-        console.warn('[API] Low confidence or unclear food - showing "Picture not clear"');
+        console.warn('[API] Low confidence or unclear food - retryCount:', retryCount);
         setAnalysisResult({
           ...result,
           foodName: 'Picture not clear',
@@ -218,9 +221,21 @@ export default function CameraScreen() {
           fat: 0,
           confidence: 'low',
         });
-        setShowResultModal(true);
-        setShowManualInput(true); // Auto-open manual input for user to type food name
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+
+        if (retryCount === 0) {
+          // First failure: show modal with retry message, no manual input yet
+          console.log('[API] First low-confidence attempt — prompting user to retake photo');
+          setShowResultModal(true);
+          setShowManualInput(false);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        } else {
+          // Second failure: show modal and auto-open manual input
+          console.log('[API] Second low-confidence attempt — opening manual input form');
+          setShowResultModal(true);
+          setShowManualInput(true);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
+        setRetryCount(prev => prev + 1);
         return;
       }
 
@@ -608,21 +623,35 @@ export default function CameraScreen() {
                     </View>
                   </View>
 
-                  {!hasValidNutrition && !allZero && (
-                    <View style={dynamicStyles.warningBox}>
+                  {analysisResult.confidence === 'low' && retryCount === 1 && (
+                    <View style={[dynamicStyles.warningBox, dynamicStyles.warningBoxOrange]}>
                       <IconSymbol
-                        ios_icon_name="exclamationmark.triangle"
+                        ios_icon_name="exclamationmark.triangle.fill"
+                        android_material_icon_name="warning"
+                        size={20}
+                        color={colors.accent}
+                      />
+                      <Text style={dynamicStyles.warningText}>
+                        We're not confident about this dish — try a clearer photo.
+                      </Text>
+                    </View>
+                  )}
+
+                  {analysisResult.confidence === 'low' && retryCount >= 2 && (
+                    <View style={[dynamicStyles.warningBox, dynamicStyles.warningBoxRed]}>
+                      <IconSymbol
+                        ios_icon_name="exclamationmark.triangle.fill"
                         android_material_icon_name="warning"
                         size={20}
                         color={colors.error}
                       />
                       <Text style={dynamicStyles.warningText}>
-                        No nutritional data available. Please type the food name to get accurate information.
+                        Still having trouble identifying this dish. Please fill in the details manually.
                       </Text>
                     </View>
                   )}
 
-                  {!allZero && (analysisResult.confidence === 'low' || !hasValidNutrition) && (
+                  {analysisResult.confidence !== 'low' && !hasValidNutrition && !allZero && (
                     <View style={dynamicStyles.warningBox}>
                       <IconSymbol
                         ios_icon_name="exclamationmark.triangle"
@@ -631,9 +660,7 @@ export default function CameraScreen() {
                         color={colors.accent}
                       />
                       <Text style={dynamicStyles.warningText}>
-                        {!hasValidNutrition
-                          ? 'Please type the food name for accurate nutritional information.'
-                          : 'Low confidence detection. You can type the food name for better accuracy.'}
+                        Please type the food name for accurate nutritional information.
                       </Text>
                     </View>
                   )}
@@ -722,31 +749,68 @@ export default function CameraScreen() {
                     </View>
                   </View>
 
-                  <View style={dynamicStyles.actionButtons}>
-                    <TouchableOpacity
-                      style={dynamicStyles.retakeButtonSecondary}
-                      onPress={retakePhoto}
-                    >
-                      <Text style={dynamicStyles.retakeButtonSecondaryText}>Retake</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        dynamicStyles.saveButton,
-                        (saving || !hasValidNutrition) && dynamicStyles.saveButtonDisabled
-                      ]}
-                      onPress={saveEntry}
-                      disabled={saving || !hasValidNutrition}
-                    >
-                      {saving ? (
-                        <ActivityIndicator color="#FFFFFF" />
-                      ) : (
-                        <Text style={dynamicStyles.saveButtonText}>
-                          {hasValidNutrition ? 'Save Entry' : 'Type Food Name First'}
+                  {analysisResult.confidence === 'low' && retryCount >= 1 ? (
+                    <View style={dynamicStyles.actionButtons}>
+                      <TouchableOpacity
+                        style={dynamicStyles.retakePhotoButton}
+                        onPress={() => {
+                          console.log('User tapped Retake Photo button from low-confidence modal');
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                          setShowResultModal(false);
+                          setTimeout(() => pickFromGallery(), 300);
+                        }}
+                      >
+                        <IconSymbol
+                          ios_icon_name="camera.fill"
+                          android_material_icon_name="camera"
+                          size={20}
+                          color="#FFFFFF"
+                        />
+                        <Text style={dynamicStyles.retakePhotoButtonText}>
+                          {retryCount >= 2 ? 'Try Another Photo' : 'Retake / Re-send Photo'}
                         </Text>
+                      </TouchableOpacity>
+
+                      {retryCount >= 2 && (
+                        <TouchableOpacity
+                          style={dynamicStyles.retakeButtonSecondary}
+                          onPress={() => {
+                            console.log('User tapped Type Manually button after second low-confidence failure');
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setShowManualInput(true);
+                          }}
+                        >
+                          <Text style={dynamicStyles.retakeButtonSecondaryText}>Type Manually</Text>
+                        </TouchableOpacity>
                       )}
-                    </TouchableOpacity>
-                  </View>
+                    </View>
+                  ) : (
+                    <View style={dynamicStyles.actionButtons}>
+                      <TouchableOpacity
+                        style={dynamicStyles.retakeButtonSecondary}
+                        onPress={retakePhoto}
+                      >
+                        <Text style={dynamicStyles.retakeButtonSecondaryText}>Retake</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          dynamicStyles.saveButton,
+                          (saving || !hasValidNutrition) && dynamicStyles.saveButtonDisabled
+                        ]}
+                        onPress={saveEntry}
+                        disabled={saving || !hasValidNutrition}
+                      >
+                        {saving ? (
+                          <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                          <Text style={dynamicStyles.saveButtonText}>
+                            {hasValidNutrition ? 'Save Entry' : 'Type Food Name First'}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </>
               )}
             </ScrollView>
@@ -1248,11 +1312,34 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.accent,
   },
+  warningBoxOrange: {
+    backgroundColor: `${colors.accent}20`,
+    borderColor: colors.accent,
+  },
+  warningBoxRed: {
+    backgroundColor: `${colors.error}15`,
+    borderColor: colors.error,
+  },
   warningText: {
     flex: 1,
     fontSize: 14,
     color: colors.text,
     lineHeight: 20,
+  },
+  retakePhotoButton: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  retakePhotoButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   resultHeader: {
     flexDirection: 'row',
