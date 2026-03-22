@@ -212,18 +212,16 @@ export default function AuthScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Apple FIRST (App Store requirement) — iOS only */}
-            {Platform.OS === "ios" && (
-              <TouchableOpacity
-                style={[styles.socialButton, styles.appleButton]}
-                onPress={handleAppleSignIn}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.appleIcon}></Text>
-                <Text style={[styles.socialButtonText, styles.appleButtonText]}>Continue with Apple</Text>
-              </TouchableOpacity>
-            )}
+            {/* Apple FIRST (App Store requirement) */}
+            <TouchableOpacity
+              style={[styles.socialButton, styles.appleButton]}
+              onPress={handleAppleSignIn}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.appleIcon}></Text>
+              <Text style={[styles.socialButtonText, styles.appleButtonText]}>Continue with Apple</Text>
+            </TouchableOpacity>
 
             {/* Google */}
             <TouchableOpacity
