@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "CalO by FoodPharmer",
-    "slug": "calo-by-foodpharmer",
+    "name": "i-want-to-build-a-ca",
+    "slug": "i-want-to-build-a-ca",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon-xjf.png",
@@ -122,7 +122,8 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-apple-authentication"
     ],
     "runtimeVersion": {
       "policy": "sdkVersion"

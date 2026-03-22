@@ -6,7 +6,7 @@ import Constants from "expo-constants";
 
 const API_URL = Constants.expoConfig?.extra?.backendUrl || "";
 
-export const BEARER_TOKEN_KEY = "calo_bearer_token";
+export const BEARER_TOKEN_KEY = "iwanttobuildaca_bearer_token";
 
 // Platform-specific storage: localStorage for web, SecureStore for native
 const storage = Platform.OS === "web"
@@ -21,8 +21,8 @@ export const authClient = createAuthClient({
   baseURL: API_URL,
   plugins: [
     expoClient({
-      scheme: "calo",
-      storagePrefix: "calo",
+      scheme: "iwanttobuildaca",
+      storagePrefix: "iwanttobuildaca",
       storage,
     }),
   ],

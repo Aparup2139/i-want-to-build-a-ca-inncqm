@@ -1,17 +1,11 @@
-
 // Global error logging for runtime errors
 // Captures console.log/warn/error and sends to Natively server for AI debugging
 
 // Declare __DEV__ global (React Native global for development mode detection)
 declare const __DEV__: boolean;
 
-import { Platform, LogBox } from "react-native";
+import { Platform } from "react-native";
 import Constants from "expo-constants";
-
-// Save original console methods BEFORE any modifications
-const originalConsoleLog = console.log;
-const originalConsoleWarn = console.warn;
-const originalConsoleError = console.error;
 
 // Simple debouncing to prevent duplicate logs
 const recentLogs: { [key: string]: boolean } = {};
@@ -23,37 +17,7 @@ const clearLogAfterDelay = (logKey: string) => {
 const MUTED_MESSAGES = [
   'each child in a list should have a unique "key" prop',
   'Each child in a list should have a unique "key" prop',
-  'AsyncStorageError',
-  'Native module is null',
-  '[Theme] Error loading theme',
-  '[Theme] Error saving theme',
-  'SecureStore',
-  '[API] Error loading',
-  'Authentication token not found',
-  'Please sign in',
-  'getValueWithKeyAsync',
-  'getItemAsync',
-  'Signup already in progress',
-  'Failed to load resource',
-  'execute.a.v1/signup',
-  'Received unexpected stream_message event',
-  'Packager is not running',
-  'Metro',
-  'bundler',
-  'Unable to connect to Metro',
-  'kCFStreamErrorDomain',
-  'NSURLConnection',
-  'NSURLSessionTask',
-  'SSL_ERROR',
-  'ERR_SSL',
-  'SSL_PROTOCOL_ERROR',
-  'ECONNREFUSED',
-  'ENOTFOUND',
-  'ETIMEDOUT',
 ];
-
-// Apply LogBox ignore for UI overlays
-LogBox.ignoreLogs(MUTED_MESSAGES);
 
 // Check if a message should be muted
 const shouldMuteMessage = (message: string): boolean => {
@@ -151,8 +115,10 @@ const flushLogs = async () => {
         // Log fetch errors only once to avoid spam
         if (!fetchErrorLogged) {
           fetchErrorLogged = true;
-          // Use original console method to avoid recursion
-          originalConsoleLog('[Natively] Fetch error (will not repeat):', e.message || e);
+          // Use a different method to avoid recursion - write directly without going through our intercept
+          if (typeof window !== 'undefined' && window.console) {
+            (window.console as any).__proto__.log.call(console, '[Natively] Fetch error (will not repeat):', e.message || e);
+          }
         }
       });
     } catch (e) {
@@ -314,6 +280,11 @@ export const setupErrorLogging = () => {
     return;
   }
 
+  // Store original console methods BEFORE any modifications
+  const originalConsoleLog = console.log;
+  const originalConsoleWarn = console.warn;
+  const originalConsoleError = console.error;
+
   // Log initialization info using original console (not intercepted)
   const logServerUrl = getLogServerUrl();
   originalConsoleLog('[Natively] Setting up error logging...');
@@ -333,12 +304,12 @@ export const setupErrorLogging = () => {
 
   // Override console.warn to capture and send to server
   console.warn = (...args: any[]) => {
+    // Always call original first
+    originalConsoleWarn.apply(console, args);
+
     // Queue log for sending to server (skip muted messages)
     const message = stringifyArgs(args);
     if (shouldMuteMessage(message)) return;
-
-    // Always call original first
-    originalConsoleWarn.apply(console, args);
 
     const source = getCallerInfo();
     queueLog('warn', message, source);

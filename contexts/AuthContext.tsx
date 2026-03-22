@@ -1,16 +1,14 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
 import { authClient, setBearerToken, clearAuthTokens } from "@/lib/auth";
-import { apiPost } from "@/utils/api";
 
 interface User {
   id: string;
   email: string;
   name?: string;
   image?: string;
-  isGuest?: boolean;
 }
 
 interface AuthContextType {
@@ -20,8 +18,6 @@ interface AuthContextType {
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
-  signInWithGitHub: () => Promise<void>;
-  signInAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
   fetchUser: () => Promise<void>;
 }
@@ -74,17 +70,23 @@ function openOAuthPopup(provider: string): Promise<string> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const userRef = useRef<User | null>(null);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   useEffect(() => {
     fetchUser();
 
-    const subscription = Linking.addEventListener("url", (event) => {
+    const subscription = Linking.addEventListener("url", () => {
       console.log("Deep link received, refreshing user session");
+      refreshUser();
     });
 
     const intervalId = setInterval(() => {
       console.log("Auto-refreshing user session to sync token...");
-      fetchUser();
+      refreshUser();
     }, 5 * 60 * 1000);
 
     return () => {
@@ -93,40 +95,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const fetchUser = async () => {
+  // Silent refresh — does NOT touch loading state
+  const refreshUser = async () => {
     try {
-      setLoading(true);
       const session = await authClient.getSession();
       if (session?.data?.user) {
         setUser(session.data.user as User);
+        userRef.current = session.data.user as User;
         if (session.data.session?.token) {
           await setBearerToken(session.data.session.token);
         }
       } else {
         setUser(null);
+        userRef.current = null;
+        await clearAuthTokens();
+      }
+    } catch (error) {
+      console.error("Failed to refresh user:", error);
+      if (Platform.OS === "ios" && error instanceof Error) {
+        if (
+          error.message.includes("525") ||
+          error.message.includes("SSL") ||
+          error.message.includes("Network request failed") ||
+          error.message.includes("certificate")
+        ) {
+          console.error("[iOS] Network/SSL error during refresh. Keeping existing session.");
+          // Don't clear user on network errors during refresh
+        } else {
+          setUser(null);
+          userRef.current = null;
+        }
+      }
+      // On refresh errors, keep existing user state
+    }
+  };
+
+  const fetchUser = async () => {
+    // Only show loading spinner on initial load (when user is not yet known)
+    const isInitial = userRef.current === null;
+    if (isInitial) {
+      setLoading(true);
+    }
+    try {
+      const session = await authClient.getSession();
+      if (session?.data?.user) {
+        setUser(session.data.user as User);
+        userRef.current = session.data.user as User;
+        if (session.data.session?.token) {
+          await setBearerToken(session.data.session.token);
+        }
+      } else {
+        setUser(null);
+        userRef.current = null;
         await clearAuthTokens();
       }
     } catch (error) {
       console.error("Failed to fetch user:", error);
-      
       if (Platform.OS === "ios" && error instanceof Error) {
-        if (error.message.includes("525") || error.message.includes("SSL") || error.message.includes("Network request failed") || error.message.includes("certificate")) {
+        if (
+          error.message.includes("525") ||
+          error.message.includes("SSL") ||
+          error.message.includes("Network request failed") ||
+          error.message.includes("certificate")
+        ) {
           console.error("[iOS] Network/SSL error detected. Keeping existing session if available.");
-          if (!user) {
+          if (!userRef.current) {
             setUser(null);
           }
         } else {
           setUser(null);
+          userRef.current = null;
         }
       } else {
         setUser(null);
+        userRef.current = null;
       }
     } finally {
-      setLoading(false);
+      if (isInitial) {
+        setLoading(false);
+      }
     }
   };
 
   const signInWithEmail = async (email: string, password: string) => {
+    console.log("[Auth] signInWithEmail called", { email });
     try {
       await authClient.signIn.email({ email, password });
       await fetchUser();
@@ -137,12 +189,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
+    console.log("[Auth] signUpWithEmail called", { email, name });
     try {
-      await authClient.signUp.email({
-        email,
-        password,
-        name,
-      });
+      await authClient.signUp.email({ email, password, name });
       await fetchUser();
     } catch (error) {
       console.error("Email sign up failed:", error);
@@ -150,7 +199,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signInWithSocial = async (provider: "google" | "apple" | "github") => {
+  const signInWithSocial = async (provider: "google" | "apple") => {
+    console.log(`[Auth] signInWithSocial called`, { provider });
     try {
       if (Platform.OS === "web") {
         const token = await openOAuthPopup(provider);
@@ -158,10 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fetchUser();
       } else {
         const callbackURL = Linking.createURL("/");
-        await authClient.signIn.social({
-          provider,
-          callbackURL,
-        });
+        await authClient.signIn.social({ provider, callbackURL });
         await fetchUser();
       }
     } catch (error) {
@@ -172,56 +219,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = () => signInWithSocial("google");
   const signInWithApple = () => signInWithSocial("apple");
-  const signInWithGitHub = () => signInWithSocial("github");
-
-  const signInAsGuest = async () => {
-    try {
-      console.log("[Auth] Signing in as guest via POST /api/guest");
-      
-      const data = await apiPost<{
-        user: { id: string; email: string; name: string; isGuest: boolean; onboarding_completed: boolean; is_pro: boolean };
-        token: string;
-      }>("/api/guest", {});
-
-      console.log("[Auth] Guest sign in response:", data);
-
-      if (data.token) {
-        await setBearerToken(data.token);
-        console.log("[Auth] Guest bearer token stored");
-      }
-
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.name,
-          isGuest: true,
-        } as User);
-        console.log("[Auth] Guest user set in state:", data.user.id);
-      }
-    } catch (error) {
-      console.error("Guest sign in failed:", error);
-      
-      if (error instanceof Error) {
-        if (error.message.includes("not available yet")) {
-          throw new Error("Guest sign-in is temporarily unavailable. Please try again in a moment.");
-        } else if (error.message.includes("Network request failed") || error.message.includes("SSL") || error.message.includes("connect")) {
-          throw new Error("Unable to connect to server. Please check your internet connection and try again.");
-        }
-      }
-      
-      throw error;
-    }
-  };
 
   const signOut = async () => {
+    console.log("[Auth] signOut called");
     try {
       await authClient.signOut();
     } catch (error) {
       console.error("Sign out failed (API):", error);
     } finally {
-       setUser(null);
-       await clearAuthTokens();
+      setUser(null);
+      userRef.current = null;
+      await clearAuthTokens();
     }
   };
 
@@ -234,8 +242,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUpWithEmail,
         signInWithGoogle,
         signInWithApple,
-        signInWithGitHub,
-        signInAsGuest,
         signOut,
         fetchUser,
       }}
