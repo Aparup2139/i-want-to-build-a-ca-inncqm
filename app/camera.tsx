@@ -209,9 +209,17 @@ export default function CameraScreen() {
       console.log('[API] Confidence level:', result.confidence);
       console.log('[API] Nutritional data - Calories:', result.calories, 'Protein:', result.protein, 'Carbs:', result.carbs, 'Fat:', result.fat);
 
-      // Confidence guardrail: if low confidence or food name is UNCLEAR
-      if (result.confidence === 'low' || result.foodName === 'UNCLEAR' || result.foodName === 'Unknown Food') {
-        console.warn('[API] Low confidence or unclear food - retryCount:', retryCount);
+      // Determine if this is a genuinely unidentified result
+      const isGenericUnknown =
+        !result.foodName ||
+        result.foodName === 'UNCLEAR' ||
+        result.foodName === 'Unknown Food';
+      const resultHasNutrition =
+        result.calories > 0 || result.protein > 0 || result.carbs > 0 || result.fat > 0;
+
+      // Low confidence with no real food name → zeroed-out "Picture not clear" flow
+      if (result.confidence === 'low' && (isGenericUnknown || !resultHasNutrition)) {
+        console.warn('[API] Low confidence + no identifiable food — retryCount:', retryCount);
         setAnalysisResult({
           ...result,
           foodName: 'Picture not clear',
@@ -223,19 +231,35 @@ export default function CameraScreen() {
         });
 
         if (retryCount === 0) {
-          // First failure: show modal with retry message, no manual input yet
+          // First failure: show modal with orange warning + Retake / Type Name buttons
           console.log('[API] First low-confidence attempt — prompting user to retake photo');
           setShowResultModal(true);
           setShowManualInput(false);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         } else {
-          // Second failure: show modal and auto-open manual input
+          // Second failure: show modal with red warning + auto-open manual input after delay
           console.log('[API] Second low-confidence attempt — opening manual input form');
           setShowResultModal(true);
-          setShowManualInput(true);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setTimeout(() => {
+            setShowResultModal(false);
+            setTimeout(() => {
+              setManualFoodName('');
+              setShowManualInput(true);
+            }, 100);
+          }, 400);
         }
         setRetryCount(prev => prev + 1);
+        return;
+      }
+
+      // Low confidence BUT backend returned an actual food name with nutrition → treat like medium
+      if (result.confidence === 'low' && !isGenericUnknown && resultHasNutrition) {
+        console.log('[API] Low confidence but identifiable food — showing result with warning. retryCount:', retryCount);
+        await incrementUsage();
+        setAnalysisResult({ ...result, confidence: 'low' });
+        setShowResultModal(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         return;
       }
 
@@ -258,7 +282,6 @@ export default function CameraScreen() {
         setShowResultModal(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-        // If confidence is medium, suggest user to type food name for better accuracy
         if (result.confidence === 'medium') {
           console.log('[API] Medium confidence - user can type food name for better accuracy');
         }
@@ -328,9 +351,11 @@ export default function CameraScreen() {
         protein: Math.round(result.protein),
         carbs: Math.round(result.carbs),
         fat: Math.round(result.fat),
-        confidence: result.confidence as 'high' | 'medium' | 'low',
+        confidence: 'high',
       });
 
+      // Reset retry state — manual lookup always produces a clean high-confidence result
+      setRetryCount(0);
       setShowManualInput(false);
       setShowResultModal(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -476,6 +501,10 @@ export default function CameraScreen() {
   const allZero = analysisResult
     ? (analysisResult.calories === 0 && analysisResult.protein === 0 && analysisResult.carbs === 0 && analysisResult.fat === 0)
     : false;
+
+  // Determine if this is the "Picture not clear" zeroed state vs a low-conf result with real data
+  const isLowConfNoFood = analysisResult?.confidence === 'low' && !hasValidNutrition;
+  const isLowConfWithFood = analysisResult?.confidence === 'low' && hasValidNutrition;
 
   const mealTypeOptions: { value: MealType; label: string; icon: any }[] = [
     { value: 'breakfast', label: 'Breakfast', icon: 'wb-sunny' },
@@ -623,7 +652,22 @@ export default function CameraScreen() {
                     </View>
                   </View>
 
-                  {analysisResult.confidence === 'low' && retryCount === 1 && (
+                  {/* medium confidence: subtle blue/grey hint */}
+                  {analysisResult.confidence === 'medium' && (
+                    <Text style={dynamicStyles.confidenceHintMedium}>
+                      AI estimate — verify if needed
+                    </Text>
+                  )}
+
+                  {/* low confidence WITH real food data: orange warning, no zeroing */}
+                  {isLowConfWithFood && (
+                    <Text style={dynamicStyles.confidenceHintLow}>
+                      Low confidence — please verify
+                    </Text>
+                  )}
+
+                  {/* low confidence, NO food (zeroed state) — first attempt: orange box */}
+                  {isLowConfNoFood && retryCount === 1 && (
                     <View style={[dynamicStyles.warningBox, dynamicStyles.warningBoxOrange]}>
                       <IconSymbol
                         ios_icon_name="exclamationmark.triangle.fill"
@@ -632,12 +676,13 @@ export default function CameraScreen() {
                         color={colors.accent}
                       />
                       <Text style={dynamicStyles.warningText}>
-                        We're not confident about this dish — try a clearer photo.
+                        Results may be inaccurate — try a clearer photo.
                       </Text>
                     </View>
                   )}
 
-                  {analysisResult.confidence === 'low' && retryCount >= 2 && (
+                  {/* low confidence, NO food (zeroed state) — second attempt: red box */}
+                  {isLowConfNoFood && retryCount >= 2 && (
                     <View style={[dynamicStyles.warningBox, dynamicStyles.warningBoxRed]}>
                       <IconSymbol
                         ios_icon_name="exclamationmark.triangle.fill"
@@ -646,7 +691,7 @@ export default function CameraScreen() {
                         color={colors.error}
                       />
                       <Text style={dynamicStyles.warningText}>
-                        Still having trouble identifying this dish. Please fill in the details manually.
+                        Could not identify food — please type the name.
                       </Text>
                     </View>
                   )}
@@ -685,8 +730,6 @@ export default function CameraScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
-
-
 
                   <View style={dynamicStyles.nutritionGrid}>
                     <View style={dynamicStyles.nutritionItem}>
@@ -749,15 +792,15 @@ export default function CameraScreen() {
                     </View>
                   </View>
 
-                  {analysisResult.confidence === 'low' && retryCount >= 1 ? (
+                  {/* Low-conf NO food: first attempt — Retake + Type Name Instead */}
+                  {isLowConfNoFood && retryCount === 1 && (
                     <View style={dynamicStyles.actionButtons}>
                       <TouchableOpacity
                         style={dynamicStyles.retakePhotoButton}
                         onPress={() => {
-                          console.log('User tapped Retake Photo button from low-confidence modal');
+                          console.log('User tapped Retake Photo button — first low-confidence attempt');
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                          setShowResultModal(false);
-                          setTimeout(() => pickFromGallery(), 300);
+                          retakePhoto();
                         }}
                       >
                         <IconSymbol
@@ -766,25 +809,43 @@ export default function CameraScreen() {
                           size={20}
                           color="#FFFFFF"
                         />
-                        <Text style={dynamicStyles.retakePhotoButtonText}>
-                          {retryCount >= 2 ? 'Try Another Photo' : 'Retake / Re-send Photo'}
-                        </Text>
+                        <Text style={dynamicStyles.retakePhotoButtonText}>Retake Photo</Text>
                       </TouchableOpacity>
 
-                      {retryCount >= 2 && (
-                        <TouchableOpacity
-                          style={dynamicStyles.retakeButtonSecondary}
-                          onPress={() => {
-                            console.log('User tapped Type Manually button after second low-confidence failure');
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            setShowManualInput(true);
-                          }}
-                        >
-                          <Text style={dynamicStyles.retakeButtonSecondaryText}>Type Manually</Text>
-                        </TouchableOpacity>
-                      )}
+                      <TouchableOpacity
+                        style={dynamicStyles.retakeButtonSecondary}
+                        onPress={openManualInput}
+                      >
+                        <Text style={dynamicStyles.retakeButtonSecondaryText}>Type Name Instead</Text>
+                      </TouchableOpacity>
                     </View>
-                  ) : (
+                  )}
+
+                  {/* Low-conf NO food: second attempt — Type Name as primary */}
+                  {isLowConfNoFood && retryCount >= 2 && (
+                    <View style={dynamicStyles.actionButtons}>
+                      <TouchableOpacity
+                        style={dynamicStyles.retakeButtonSecondary}
+                        onPress={() => {
+                          console.log('User tapped Retake Photo button — second low-confidence attempt');
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          retakePhoto();
+                        }}
+                      >
+                        <Text style={dynamicStyles.retakeButtonSecondaryText}>Retake</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={dynamicStyles.saveButton}
+                        onPress={openManualInput}
+                      >
+                        <Text style={dynamicStyles.saveButtonText}>Type Name</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Normal result (high/medium) or low-conf WITH real food data */}
+                  {(!isLowConfNoFood) && (
                     <View style={dynamicStyles.actionButtons}>
                       <TouchableOpacity
                         style={dynamicStyles.retakeButtonSecondary}
@@ -1300,6 +1361,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  confidenceHintMedium: {
+    fontSize: 12,
+    color: '#6B8FBF',
+    marginTop: -12,
+    marginBottom: 16,
+    fontWeight: '500',
+  },
+  confidenceHintLow: {
+    fontSize: 12,
+    color: '#E07B39',
+    marginTop: -12,
+    marginBottom: 16,
+    fontWeight: '500',
   },
   warningBox: {
     flexDirection: 'row',
