@@ -38,18 +38,20 @@ interface FromImageBody {
 interface AnalyzeImageResponse {
   foodName: string;
   calories: number;
-  protein: number;
+  proteins: number;
   carbs: number;
-  fat: number;
+  fats: number;
+  servingSize: string;
+  category: string;
   imageUrl: string;
   confidence: string;
   databaseSuggestions?: Array<{
     id: string;
     name: string;
     calories: number;
-    protein: number;
+    proteins: number;
     carbs: number;
-    fat: number;
+    fats: number;
   }>;
 }
 
@@ -68,9 +70,11 @@ interface FoodSearchResult {
 const nutritionSchema = z.object({
   foodName: z.string().describe('Name of the identified food'),
   calories: z.number().describe('Estimated calorie count for the portion shown'),
-  protein: z.number().describe('Estimated protein in grams for the portion shown'),
+  proteins: z.number().describe('Estimated protein in grams for the portion shown'),
   carbs: z.number().describe('Estimated carbs in grams for the portion shown'),
-  fat: z.number().describe('Estimated fat in grams for the portion shown'),
+  fats: z.number().describe('Estimated fat in grams for the portion shown'),
+  servingSize: z.string().describe('Serving size description (e.g. "1 slice (107g)" or "1 cup (200ml)")'),
+  category: z.string().describe('Food category (e.g. "beverages", "desserts", "fast food", "indian food", "ice cream")'),
   confidence: z.enum(['high', 'medium', 'low']).describe('Confidence level: high=certain identification, medium=type clear, low=unclear/difficult to estimate'),
 });
 
@@ -237,9 +241,11 @@ export function registerFoodEntryRoutes(app: App) {
             properties: {
               foodName: { type: 'string' },
               calories: { type: 'number' },
-              protein: { type: 'number' },
+              proteins: { type: 'number' },
               carbs: { type: 'number' },
-              fat: { type: 'number' },
+              fats: { type: 'number' },
+              servingSize: { type: 'string' },
+              category: { type: 'string' },
               confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
             },
           },
@@ -276,27 +282,28 @@ export function registerFoodEntryRoutes(app: App) {
           messages: [
             {
               role: 'user',
-              content: `You are a nutritionist expert. Analyze this food name and provide accurate nutritional information for a typical serving.
+              content: `You are a nutrition database expert using USDA Food Data Central standards. Always return HIGH confidence since the food name is provided explicitly.
 
 Food name: "${foodName}"
 
-Provide the nutritional values for ONE TYPICAL SERVING of this food (not per 100g, not per 1kg, but a realistic serving size someone would eat).
+INSTRUCTIONS:
+1. Always return confidence = "high" (food name is explicitly given)
+2. Provide nutritional data for ONE TYPICAL SERVING (not per 100g)
+3. Use standard USDA portion sizes and nutritional references
+4. Return realistic serving sizes (e.g., "1 slice (107g)", "1 cup (200ml)", "1 medium (150g)")
+5. Include appropriate food category (beverages, desserts, fast food, indian food, ice cream, fruits, vegetables, proteins, grains, dairy, condiments, etc.)
+6. All nutritional values must be realistic and based on actual food composition
 
-Examples of typical serving sizes:
-- 1 scoop of ice cream = ~100g
-- 1 slice of pizza = ~150g
-- 1 cup of milk = ~200ml
-- 1 apple = ~150g
-- 1 chicken breast = ~150g
-- 1 bowl of rice = ~200g
+STANDARD SERVING SIZES:
+- Pizza: 1 slice (100-120g)
+- Ice cream: 1 scoop (100g) or 1/2 cup (67g)
+- Beverages: 1 cup (200-250ml)
+- Fruits/vegetables: 1 medium (100-200g)
+- Proteins: 1 portion (100-150g)
+- Rice/grains: 1 bowl/cup (150-200g)
+- Desserts: 1 piece (50-100g)
 
-Important:
-1. Set confidence to "high" if you're very confident about the identification (common foods, well-known dishes)
-2. Set confidence to "medium" if somewhat confident but the exact preparation is unclear
-3. Set confidence to "low" if uncertain or if the food is very ambiguous
-4. All nutritional values MUST be greater than 0 (no zeros allowed)
-5. If carbs seem to be 0 (like pure protein), ensure other macros are correct
-6. Provide realistic, accurate nutritional data based on actual food composition`,
+Return accurate USDA nutritional data with precise serving size descriptions.`,
             },
           ],
         });
@@ -307,11 +314,11 @@ Important:
         if (nutritionData.calories <= 0) {
           nutritionData.calories = Math.max(nutritionData.calories, 100);
         }
-        if (nutritionData.protein <= 0 && nutritionData.carbs <= 0 && nutritionData.fat <= 0) {
+        if (nutritionData.proteins <= 0 && nutritionData.carbs <= 0 && nutritionData.fats <= 0) {
           // If all macros are 0, provide reasonable defaults
-          nutritionData.protein = 5;
+          nutritionData.proteins = 5;
           nutritionData.carbs = 15;
-          nutritionData.fat = 5;
+          nutritionData.fats = 5;
         }
 
         app.logger.info(
@@ -327,9 +334,11 @@ Important:
         return {
           foodName: nutritionData.foodName,
           calories: nutritionData.calories,
-          protein: nutritionData.protein,
+          proteins: nutritionData.proteins,
           carbs: nutritionData.carbs,
-          fat: nutritionData.fat,
+          fats: nutritionData.fats,
+          servingSize: nutritionData.servingSize,
+          category: nutritionData.category,
           confidence: nutritionData.confidence,
         };
       } catch (err) {
@@ -351,9 +360,11 @@ Important:
             return {
               foodName: match.name,
               calories: match.calories,
-              protein: match.protein,
+              proteins: match.protein,
               carbs: match.carbs,
-              fat: match.fat,
+              fats: match.fat,
+              servingSize: `${match.servingSize} ${match.servingUnit}`,
+              category: match.category,
               confidence: 'medium' as const,
             };
           }
@@ -365,9 +376,11 @@ Important:
         return {
           foodName,
           calories: 250,
-          protein: 10,
+          proteins: 10,
           carbs: 25,
-          fat: 10,
+          fats: 10,
+          servingSize: 'standard serving',
+          category: 'unknown',
           confidence: 'low' as const,
         };
       }
@@ -464,9 +477,11 @@ Important:
             properties: {
               foodName: { type: 'string' },
               calories: { type: 'number' },
-              protein: { type: 'number' },
+              proteins: { type: 'number' },
               carbs: { type: 'number' },
-              fat: { type: 'number' },
+              fats: { type: 'number' },
+              servingSize: { type: 'string' },
+              category: { type: 'string' },
               imageUrl: { type: 'string' },
               confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
               databaseSuggestions: {
@@ -477,9 +492,9 @@ Important:
                     id: { type: 'string', format: 'uuid' },
                     name: { type: 'string' },
                     calories: { type: 'number' },
-                    protein: { type: 'number' },
+                    proteins: { type: 'number' },
                     carbs: { type: 'number' },
-                    fat: { type: 'number' },
+                    fats: { type: 'number' },
                   },
                 },
               },
@@ -573,25 +588,36 @@ Important:
                 },
                 {
                   type: 'text',
-                  text: `You are an expert food nutritionist and dietary analyst. Analyze this food image and provide accurate nutritional information.
+                  text: `You are an aggressive food recognition AI. ALWAYS identify visible food. Never say you cannot identify something if any food is visible.
 
-IMPORTANT CATEGORIES TO HANDLE:
-- INDIAN FOODS: biryani, butter chicken, samosa, bhujia, sev, dosa, idli, gulab jamun, paneer tikka, naan, roti, dal, curry varieties, pakora, jalebi, rasgulla, etc.
-- FAST FOOD: burgers, pizza, fries, nuggets, sandwiches, wraps, tacos
-- BEVERAGES: sodas, juices, smoothies, coffee drinks, tea, energy drinks, milkshakes
-- ICE CREAM: vanilla, chocolate, strawberry, mango, butterscotch, and other flavors
-- DESSERTS: cakes, cookies, brownies, pastries, donuts
+CRITICAL RULES:
+1. If you see ANY food, return MEDIUM or HIGH confidence. NEVER return LOW confidence if food is visible.
+2. Return LOW confidence ONLY if the image contains NO food at all (blank image, non-food objects only).
+3. ALWAYS provide a specific food name - NEVER return empty or null.
+4. Use realistic nutritional data from USDA standards.
+
+FOOD CATEGORIES TO RECOGNIZE:
+- INDIAN: biryani, butter chicken, samosa, pakora, dosa, idli, paneer tikka, naan, roti, dal, curry, rasgulla, gulab jamun
+- FAST FOOD: burgers, pizza, fries, nuggets, sandwiches, tacos, hot dogs
+- DESSERTS & SWEETS: cakes, cookies, brownies, pastries, donuts, ice cream, candy
+- BEVERAGES: sodas, juices, smoothies, coffee, tea, milkshakes, energy drinks, water
+- PROTEINS: chicken, beef, fish, eggs, tofu, beans
+- GRAINS: rice, pasta, bread, cereal, noodles
+- FRUITS & VEGETABLES: apples, bananas, carrots, broccoli, salads
+- DAIRY: milk, yogurt, cheese, butter
+- CONDIMENTS & SAUCES: ketchup, mayo, olive oil, soy sauce
 
 INSTRUCTIONS:
-1. Identify the SPECIFIC food name (e.g., "Butter Chicken" not just "curry", "Samosa" not "Indian snack")
-2. Estimate portion size shown in the image
-3. Provide nutritional values for the PORTION shown
-4. Set confidence based on:
-   - HIGH: Clear identification with visible portion, typical preparation method
-   - MEDIUM: Type is clear but portion or exact preparation unclear
-   - LOW: Cannot clearly identify or estimate portions accurately
+1. Identify the specific food name as precisely as possible (e.g., "Pepperoni Pizza" not just "pizza")
+2. Estimate the exact portion size shown (e.g., "1 slice (107g)" or "1 cup (200ml)")
+3. Estimate nutritional values for this specific portion using USDA data
+4. Assign a food category from the list above
+5. Set confidence:
+   - HIGH: Clear food identification, obvious portion size
+   - MEDIUM: Food type clear, but portion or preparation slightly uncertain
+   - LOW: Only if NO food is visible in image
 
-Return values for the portion shown in the image, not per 100g.`,
+Return nutritional values for the EXACT PORTION shown, not per 100g. Be precise and use standard portion definitions.`,
                 },
               ],
             },
@@ -621,9 +647,11 @@ Return values for the portion shown in the image, not per 100g.`,
           nutritionData = {
             foodName: fallbackFood.name,
             calories: fallbackFood.calories,
-            protein: fallbackFood.protein,
+            proteins: fallbackFood.protein,
             carbs: fallbackFood.carbs,
-            fat: fallbackFood.fat,
+            fats: fallbackFood.fat,
+            servingSize: `${fallbackFood.servingSize} ${fallbackFood.servingUnit}`,
+            category: fallbackFood.category,
             confidence: 'low',
           };
           app.logger.info({ foodName: nutritionData.foodName }, 'Using database food as fallback');
@@ -631,9 +659,11 @@ Return values for the portion shown in the image, not per 100g.`,
           nutritionData = {
             foodName: 'Unknown Food',
             calories: 200,
-            protein: 5,
+            proteins: 5,
             carbs: 30,
-            fat: 8,
+            fats: 8,
+            servingSize: '1 serving',
+            category: 'unknown',
             confidence: 'low',
           };
           app.logger.warn('No database fallback available, using default values');
@@ -663,9 +693,9 @@ Return values for the portion shown in the image, not per 100g.`,
             id: r.item.id,
             name: r.item.name,
             calories: r.item.calories,
-            protein: r.item.protein,
+            proteins: r.item.protein,
             carbs: r.item.carbs,
-            fat: r.item.fat,
+            fats: r.item.fat,
           }));
           app.logger.info({ suggestions: databaseSuggestions.length }, 'Database suggestions found');
         } else {
@@ -680,9 +710,9 @@ Return values for the portion shown in the image, not per 100g.`,
               id: item.id,
               name: item.name,
               calories: item.calories,
-              protein: item.protein,
+              proteins: item.protein,
               carbs: item.carbs,
-              fat: item.fat,
+              fats: item.fat,
             }));
             app.logger.info({ suggestions: databaseSuggestions.length }, 'Generic database suggestions provided');
           }

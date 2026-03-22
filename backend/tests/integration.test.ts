@@ -512,6 +512,14 @@ describe("API Integration Tests", () => {
     const data = await res.json();
     expect(data.foodName).toBeDefined();
     expect(typeof data.calories).toBe("number");
+    expect(typeof data.proteins).toBe("number");
+    expect(typeof data.carbs).toBe("number");
+    expect(typeof data.fats).toBe("number");
+    expect(data.servingSize).toBeDefined();
+    expect(typeof data.servingSize).toBe("string");
+    expect(data.category).toBeDefined();
+    expect(typeof data.category).toBe("string");
+    expect(data.imageUrl).toBeDefined();
     expect(["high", "medium", "low"]).toContain(data.confidence);
   });
 
@@ -664,9 +672,13 @@ describe("API Integration Tests", () => {
     expect(data.foodName).toBeDefined();
     expect(typeof data.calories).toBe("number");
     expect(data.calories).toBeGreaterThan(0);
-    expect(typeof data.protein).toBe("number");
+    expect(typeof data.proteins).toBe("number");
     expect(typeof data.carbs).toBe("number");
-    expect(typeof data.fat).toBe("number");
+    expect(typeof data.fats).toBe("number");
+    expect(data.servingSize).toBeDefined();
+    expect(typeof data.servingSize).toBe("string");
+    expect(data.category).toBeDefined();
+    expect(typeof data.category).toBe("string");
     expect(["high", "medium", "low"]).toContain(data.confidence);
   });
 
