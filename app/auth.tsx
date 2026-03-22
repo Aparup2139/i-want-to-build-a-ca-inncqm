@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { FontAwesome } from "@expo/vector-icons";
 
 type Mode = "signin" | "signup";
 
@@ -219,8 +220,8 @@ export default function AuthScreen() {
               disabled={loading}
               activeOpacity={0.85}
             >
-              <Text style={styles.appleIcon}></Text>
-              <Text style={[styles.socialButtonText, styles.appleButtonText]}>Continue with Apple</Text>
+              <FontAwesome name="apple" size={20} color="#000000" />
+              <Text style={[styles.socialButtonText, styles.appleButtonText]}>Apple</Text>
             </TouchableOpacity>
 
             {/* Google */}
@@ -231,7 +232,7 @@ export default function AuthScreen() {
               activeOpacity={0.85}
             >
               <Text style={styles.googleIcon}>G</Text>
-              <Text style={styles.socialButtonText}>Continue with Google</Text>
+              <Text style={styles.socialButtonText}>Google</Text>
             </TouchableOpacity>
           </View>
 
@@ -444,11 +445,6 @@ const styles = StyleSheet.create({
   },
   appleButtonText: {
     color: "#000000",
-  },
-  appleIcon: {
-    fontSize: 18,
-    color: "#000000",
-    lineHeight: 22,
   },
   googleIcon: {
     fontSize: 16,
